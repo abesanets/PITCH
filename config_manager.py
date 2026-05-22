@@ -12,14 +12,15 @@ def load_config():
         "run_on_startup": False,
         "visualizer_style": "wave",
         "visualizer_color_preset": "emerald",
-        "visualizer_size": "medium"
+        "visualizer_size": "medium",
+        "visualizer_sensitivity": 1.0,
     }
     if os.path.exists(CONFIG_FILE):
         try:
             with open(CONFIG_FILE, "r", encoding="utf-8") as f:
                 config = json.load(f)
                 config.pop("hotkey_command", None)
-                if config.get("visualizer_style") == "pulse":
+                if config.get("visualizer_style") in ("pulse", "dots", "ribbon"):
                     config["visualizer_style"] = "wave"
                 for k, v in defaults.items():
                     if k not in config:
