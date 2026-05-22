@@ -39,7 +39,15 @@ def transcribe_with_fallback(client, file_path):
 
 def process_text_with_fallback(client, messages, text_model):
     # We will try the user's preferred model first, then fallbacks
-    models = [text_model, "llama-3.3-70b-versatile", "qwen/qwen3-32b", "llama-3.1-8b-instant"]
+    models = [
+        text_model, 
+        "llama-3.3-70b-versatile", 
+        "meta-llama/llama-4-scout-17b-16e-instruct",
+        "qwen/qwen3-32b", 
+        "openai/gpt-oss-20b",
+        "llama-3.1-8b-instant",
+        "openai/gpt-oss-120b"
+    ]
     # Remove duplicates but preserve order
     models = list(dict.fromkeys(models))
     
