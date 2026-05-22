@@ -1,0 +1,8 @@
+PyQt6
+sounddevice
+soundfile
+keyboard
+pyperclip
+groq
+numpy
+pyautogui

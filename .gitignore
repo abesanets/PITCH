@@ -1,0 +1,33 @@
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+ENV/
+*.manifest
+*.spec
+
+# PyInstaller build outputs (keep dist/ for the compiled exe, or ignore if building locally)
+build/
+dist/
+
+# Application configuration & credentials (DO NOT COMMIT API KEYS)
+config.json
+
+# Logs and temporary files
+*.log
+*.wav
+temp_audio.wav
+voice_assistant_temp.wav
+
+# IDE configuration files
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
