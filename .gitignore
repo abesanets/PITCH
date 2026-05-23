@@ -16,6 +16,7 @@ dist/
 
 # Application configuration & credentials (DO NOT COMMIT API KEYS)
 config.json
+history.json
 
 # Logs and temporary files
 *.log

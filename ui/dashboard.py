@@ -342,6 +342,7 @@ class DashboardWindow(QWidget):
         self.preview_widget.set_style(self.config.get("visualizer_style", "wave"))
         self.preview_widget.set_preset(self.config.get("visualizer_color_preset", "mono"))
         self.preview_widget.set_size(self.config.get("visualizer_size", "medium"))
+        self.preview_widget.set_bg_mode(self.config.get("visualizer_bg_mode", "solid"))
         pfl.addWidget(self.preview_widget)
         lay.addWidget(preview_frame)
 
@@ -372,6 +373,16 @@ class DashboardWindow(QWidget):
         self.theme_seg.setCurrentIndex(0 if self.config.get("theme", "dark") == "dark" else 1)
         self.theme_seg.currentChanged.connect(lambda i: self.apply_theme("dark" if i == 0 else "light"))
 
+        self.bg_seg = SegmentedControl(["Сплошной", "Без фона", "Градиент"])
+        bg_map = {"solid": 0, "none": 1, "gradient": 2}
+        self.bg_seg.setCurrentIndex(bg_map.get(self.config.get("visualizer_bg_mode", "solid"), 0))
+        self.bg_seg.currentChanged.connect(self._on_bg_mode_changed)
+
+        self.size_seg = SegmentedControl(["XS", "S", "M", "L", "XL"])
+        size_map = {"xs": 0, "small": 1, "medium": 2, "large": 3, "xl": 4}
+        self.size_seg.setCurrentIndex(size_map.get(self.config.get("visualizer_size", "medium"), 2))
+        self.size_seg.currentChanged.connect(self._on_size_changed)
+
         # Row 1: Форма | Тема
         row1 = QHBoxLayout()
         row1.setSpacing(16)
@@ -379,15 +390,13 @@ class DashboardWindow(QWidget):
         row1.addWidget(ctrl_cell("ТЕМА", self.theme_seg))
         cl.addLayout(row1)
 
-        self.size_seg = SegmentedControl(["XS", "S", "M", "L", "XL"])
-        size_map = {"xs": 0, "small": 1, "medium": 2, "large": 3, "xl": 4}
-        self.size_seg.setCurrentIndex(size_map.get(self.config.get("visualizer_size", "medium"), 2))
-        self.size_seg.currentChanged.connect(self._on_size_changed)
+        # Row 2: Фон (full width)
+        cl.addWidget(ctrl_cell("ФОН", self.bg_seg))
 
-        # Row 2: Размер (full width)
+        # Row 3: Размер (full width)
         cl.addWidget(ctrl_cell("РАЗМЕР", self.size_seg))
 
-        # Row 3: Чувствительность — slider + value label
+        # Row 4: Чувствительность — slider + value label
         sens_widget = QWidget()
         sens_vl = QVBoxLayout(sens_widget)
         sens_vl.setContentsMargins(0, 0, 0, 0)
@@ -438,6 +447,10 @@ class DashboardWindow(QWidget):
         self.preview_widget.set_style(["wave", "bars", "scroll"][idx])
         self._auto_save_visualizer()
 
+    def _on_bg_mode_changed(self, idx):
+        self.preview_widget.set_bg_mode(["solid", "none", "gradient"][idx])
+        self._auto_save_visualizer()
+
     def _on_size_changed(self, idx):
         self.preview_widget.set_size(["xs", "small", "medium", "large", "xl"][idx])
         self._auto_save_visualizer()
@@ -461,6 +474,7 @@ class DashboardWindow(QWidget):
         self.config["visualizer_style"] = ["wave", "bars", "scroll"][self.shape_seg.currentIndex()]
         self.config["visualizer_size"]  = ["xs", "small", "medium", "large", "xl"][self.size_seg.currentIndex()]
         self.config["visualizer_color_preset"] = self.color_selector.currentPreset()
+        self.config["visualizer_bg_mode"] = ["solid", "none", "gradient"][self.bg_seg.currentIndex()]
         self.config["theme"] = "dark" if self.theme_seg.currentIndex() == 0 else "light"
         self.config["visualizer_sensitivity"] = self.sens_slider.value() / 5.0
         self.save_callback(self.config)
@@ -773,6 +787,7 @@ class DashboardWindow(QWidget):
         self.theme_seg.set_theme(theme)
         self.shape_seg.set_theme(theme)
         self.size_seg.set_theme(theme)
+        self.bg_seg.set_theme(theme)
         self.color_selector.set_theme(theme)
         self.preview_widget.set_theme(theme)
 
@@ -958,8 +973,8 @@ class DashboardWindow(QWidget):
             self.hide()
 
     def showEvent(self, event):
-        """Apply native rounded corners via DWM on first show."""
+        """Apply native rounded corners via DWM on every show."""
         super().showEvent(event)
-        if not getattr(self, '_dwm_applied', False):
-            self._dwm_applied = True
-            _apply_dwm_rounded_corners(self.winId())
+        # Re-apply DWM corners every time window becomes visible
+        # Windows can lose corner preference after hide/show cycles
+        _apply_dwm_rounded_corners(self.winId())
