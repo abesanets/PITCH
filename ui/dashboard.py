@@ -195,7 +195,7 @@ class DashboardWindow(QWidget):
         self.status_dot_lbl = QLabel("● Готов")
         self.status_dot_lbl.setObjectName("StatusDot")
         self.status_dot_lbl.setStyleSheet("color: #10B981; font-size: 11px;")
-        ver_lbl = QLabel("v1.0")
+        ver_lbl = QLabel("v1.1")
         ver_lbl.setObjectName("VersionLbl")
         lay.addWidget(self.status_dot_lbl)
         lay.addWidget(ver_lbl)
@@ -427,12 +427,6 @@ class DashboardWindow(QWidget):
         ccl.addWidget(self.color_selector)
         lay.addWidget(color_card)
 
-        self.vis_save_btn = QPushButton("Сохранить")
-        self.vis_save_btn.setObjectName("PrimaryBtn")
-        self.vis_save_btn.setCursor(Qt.CursorShape.PointingHandCursor)
-        self.vis_save_btn.setFixedWidth(120)
-        self.vis_save_btn.clicked.connect(self._save_visualizer)
-        lay.addWidget(self.vis_save_btn)
         lay.addStretch()
 
         outer.addStretch()
@@ -442,14 +436,17 @@ class DashboardWindow(QWidget):
 
     def _on_shape_changed(self, idx):
         self.preview_widget.set_style(["wave", "bars", "scroll"][idx])
+        self._auto_save_visualizer()
 
     def _on_size_changed(self, idx):
         self.preview_widget.set_size(["xs", "small", "medium", "large", "xl"][idx])
+        self._auto_save_visualizer()
 
     def _on_sensitivity_changed(self, val):
         sens = val / 5.0
         self.sens_val_lbl.setText(f"{sens:.1f}×")
         self.preview_widget.set_sensitivity(sens)
+        self._auto_save_visualizer()
 
     def _on_preset_changed(self, key):
         self.preview_widget.set_preset(key)
@@ -457,17 +454,26 @@ class DashboardWindow(QWidget):
             self.preview_widget.set_custom_colors(self.color_selector._custom_colors)
         self.config["visualizer_color_preset"] = key
         self.apply_theme(self.theme_name, key)
+        self._auto_save_visualizer()
 
-    def _save_visualizer(self):
+    def _auto_save_visualizer(self):
+        """Auto-save visualizer settings without button click"""
         self.config["visualizer_style"] = ["wave", "bars", "scroll"][self.shape_seg.currentIndex()]
         self.config["visualizer_size"]  = ["xs", "small", "medium", "large", "xl"][self.size_seg.currentIndex()]
         self.config["visualizer_color_preset"] = self.color_selector.currentPreset()
         self.config["theme"] = "dark" if self.theme_seg.currentIndex() == 0 else "light"
         self.config["visualizer_sensitivity"] = self.sens_slider.value() / 5.0
         self.save_callback(self.config)
-        self.vis_save_btn.setText("Сохранено!")
-        self.vis_save_btn.setEnabled(False)
-        QTimer.singleShot(1500, lambda: (self.vis_save_btn.setText("Сохранить"), self.vis_save_btn.setEnabled(True)))
+
+    def _auto_save_settings(self):
+        """Auto-save settings without button click"""
+        self.config["api_key"]    = self.api_input.text().strip()
+        self.config["hotkey"]     = self.hotkey_combo.currentText()
+        self.config["text_model"] = self.model_combo.currentText()
+        self.config["theme"]      = "dark" if self.theme_seg.currentIndex() == 0 else "light"
+        self.config["run_on_startup"] = self.startup_toggle.isChecked()
+        self.config["use_raw_whisper"] = self.raw_whisper_toggle.isChecked()
+        self.save_callback(self.config)
 
     def _build_history_tab(self):
         page = QWidget()
@@ -596,57 +602,60 @@ class DashboardWindow(QWidget):
         title.setObjectName("PageTitle")
         lay.addWidget(title)
 
-        card = QFrame()
-        card.setObjectName("Card")
-        cl = QVBoxLayout(card)
-        cl.setContentsMargins(16, 14, 16, 14)
-        cl.setSpacing(12)
-
-        def cap(text):
-            lbl = QLabel(text)
+        def setting_cell(label_text, widget):
+            """Vertical cell: small cap label on top, control below — matches visualizer style."""
+            cell = QWidget()
+            vl = QVBoxLayout(cell)
+            vl.setContentsMargins(0, 0, 0, 0)
+            vl.setSpacing(6)
+            lbl = QLabel(label_text)
             lbl.setObjectName("SectionCap")
-            return lbl
+            vl.addWidget(lbl)
+            vl.addWidget(widget)
+            return cell
 
-        def field_row(label, widget, w=None):
-            r = QHBoxLayout()
-            r.setSpacing(12)
-            lbl = QLabel(label)
-            lbl.setObjectName("FieldLbl")
-            lbl.setFixedWidth(120)
-            if w: widget.setFixedWidth(w)
-            r.addWidget(lbl)
-            r.addWidget(widget)
-            r.addStretch()
-            return r
+        # ── API card ──
+        api_card = QFrame()
+        api_card.setObjectName("Card")
+        acl = QVBoxLayout(api_card)
+        acl.setContentsMargins(16, 14, 16, 14)
+        acl.setSpacing(10)
 
-        cl.addWidget(cap("API"))
-        api_row = QHBoxLayout()
-        api_row.setSpacing(8)
+        api_cap = QLabel("API")
+        api_cap.setObjectName("SectionCap")
+        acl.addWidget(api_cap)
+
         self.api_input = QLineEdit()
         self.api_input.setText(self.config.get("api_key", ""))
         self.api_input.setEchoMode(QLineEdit.EchoMode.Password)
-        self.api_input.setPlaceholderText("Groq API Key")
-        api_lbl = QLabel("Groq API Key")
-        api_lbl.setObjectName("FieldLbl")
-        api_lbl.setFixedWidth(100)
+        self.api_input.setPlaceholderText("gsk_...")
+        self.api_input.editingFinished.connect(self._auto_save_settings)
+
         self.btn_toggle_api = QPushButton("Показать")
         self.btn_toggle_api.setObjectName("SecondaryBtn")
         self.btn_toggle_api.setCursor(Qt.CursorShape.PointingHandCursor)
-        self.btn_toggle_api.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
-        self.btn_toggle_api.setMinimumWidth(80)
         self.btn_toggle_api.clicked.connect(self.toggle_api_visibility)
-        api_row.addWidget(api_lbl)
-        api_row.addWidget(self.api_input, 1)
-        api_row.addWidget(self.btn_toggle_api)
-        cl.addLayout(api_row)
 
-        cl.addWidget(cap("ВВОД"))
+        api_input_row = QHBoxLayout()
+        api_input_row.setSpacing(8)
+        api_input_row.addWidget(self.api_input, 1)
+        api_input_row.addWidget(self.btn_toggle_api)
+
+        acl.addLayout(api_input_row)
+        lay.addWidget(api_card)
+
+        # ── Input + Model card ──
+        input_card = QFrame()
+        input_card.setObjectName("Card")
+        icl = QVBoxLayout(input_card)
+        icl.setContentsMargins(16, 14, 16, 14)
+        icl.setSpacing(14)
+
         self.hotkey_combo = QComboBox()
         self.hotkey_combo.addItems(["ctrl+windows", "left alt+space", "f8"])
         self.hotkey_combo.setCurrentText(self.config.get("hotkey", "ctrl+windows"))
-        cl.addLayout(field_row("Горячая клавиша", self.hotkey_combo, 180))
+        self.hotkey_combo.currentTextChanged.connect(self._auto_save_settings)
 
-        cl.addWidget(cap("МОДЕЛЬ"))
         self.model_combo = QComboBox()
         self.model_combo.addItems([
             "llama-3.3-70b-versatile",
@@ -657,20 +666,62 @@ class DashboardWindow(QWidget):
             "openai/gpt-oss-120b",
         ])
         self.model_combo.setCurrentText(self.config.get("text_model", "llama-3.3-70b-versatile"))
-        cl.addLayout(field_row("Текстовая модель", self.model_combo, 220))
+        self.model_combo.currentTextChanged.connect(self._auto_save_settings)
 
-        cl.addWidget(cap("СИСТЕМА"))
+        icl.addWidget(setting_cell("ГОРЯЧАЯ КЛАВИША", self.hotkey_combo))
+        icl.addWidget(setting_cell("ТЕКСТОВАЯ МОДЕЛЬ", self.model_combo))
+        lay.addWidget(input_card)
+
+        # ── System card ──
+        sys_card = QFrame()
+        sys_card.setObjectName("Card")
+        scl = QVBoxLayout(sys_card)
+        scl.setContentsMargins(16, 14, 16, 14)
+        scl.setSpacing(0)
+
         self.startup_toggle = ToggleSwitch(checked=self.config.get("run_on_startup", False))
-        cl.addLayout(field_row("Автозапуск", self.startup_toggle))
+        self.startup_toggle.toggled.connect(self._auto_save_settings)
 
-        lay.addWidget(card)
+        toggle_row = QHBoxLayout()
+        toggle_row.setSpacing(12)
+        toggle_lbl_block = QVBoxLayout()
+        toggle_lbl_block.setSpacing(2)
+        toggle_title = QLabel("Автозапуск")
+        toggle_title.setObjectName("FieldLbl")
+        toggle_sub = QLabel("Запускать Echo при входе в систему")
+        toggle_sub.setObjectName("DetailMeta")
+        toggle_lbl_block.addWidget(toggle_title)
+        toggle_lbl_block.addWidget(toggle_sub)
+        toggle_row.addLayout(toggle_lbl_block, 1)
+        toggle_row.addWidget(self.startup_toggle)
+        scl.addLayout(toggle_row)
+        lay.addWidget(sys_card)
 
-        self.save_btn = QPushButton("Сохранить")
-        self.save_btn.setObjectName("PrimaryBtn")
-        self.save_btn.setCursor(Qt.CursorShape.PointingHandCursor)
-        self.save_btn.setFixedWidth(120)
-        self.save_btn.clicked.connect(self.save)
-        lay.addWidget(self.save_btn)
+        # ── Processing card ──
+        proc_card = QFrame()
+        proc_card.setObjectName("Card")
+        pcl = QVBoxLayout(proc_card)
+        pcl.setContentsMargins(16, 14, 16, 14)
+        pcl.setSpacing(0)
+
+        self.raw_whisper_toggle = ToggleSwitch(checked=self.config.get("use_raw_whisper", False))
+        self.raw_whisper_toggle.toggled.connect(self._auto_save_settings)
+
+        raw_toggle_row = QHBoxLayout()
+        raw_toggle_row.setSpacing(12)
+        raw_lbl_block = QVBoxLayout()
+        raw_lbl_block.setSpacing(2)
+        raw_title = QLabel("Сырой Whisper")
+        raw_title.setObjectName("FieldLbl")
+        raw_sub = QLabel("Быстрее, но без улучшения качества LLM")
+        raw_sub.setObjectName("DetailMeta")
+        raw_lbl_block.addWidget(raw_title)
+        raw_lbl_block.addWidget(raw_sub)
+        raw_toggle_row.addLayout(raw_lbl_block, 1)
+        raw_toggle_row.addWidget(self.raw_whisper_toggle)
+        pcl.addLayout(raw_toggle_row)
+        lay.addWidget(proc_card)
+
         lay.addStretch()
 
         outer.addStretch()
@@ -900,17 +951,6 @@ class DashboardWindow(QWidget):
         else:
             self.api_input.setEchoMode(QLineEdit.EchoMode.Password)
             self.btn_toggle_api.setText("Показать")
-
-    def save(self):
-        self.config["api_key"]    = self.api_input.text().strip()
-        self.config["hotkey"]     = self.hotkey_combo.currentText()
-        self.config["text_model"] = self.model_combo.currentText()
-        self.config["theme"]      = "dark" if self.theme_seg.currentIndex() == 0 else "light"
-        self.config["run_on_startup"] = self.startup_toggle.isChecked()
-        self.save_callback(self.config)
-        self.save_btn.setText("Сохранено!")
-        self.save_btn.setEnabled(False)
-        QTimer.singleShot(1500, lambda: (self.save_btn.setText("Сохранить"), self.save_btn.setEnabled(True)))
 
     def closeEvent(self, event):
         if event.spontaneous():

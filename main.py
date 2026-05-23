@@ -259,7 +259,8 @@ class VoiceAssistant:
 
     def process_audio_thread(self, filename, text_model):
         client = self.get_groq_client()
-        result = process_audio_pipeline(filename, self.config["api_key"], text_model, client=client)
+        use_raw = self.config.get("use_raw_whisper", False)
+        result = process_audio_pipeline(filename, self.config["api_key"], text_model, client=client, use_raw_whisper=use_raw)
         if isinstance(result, dict):
             import history_manager
             history_manager.add_history_entry(

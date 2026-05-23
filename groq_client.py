@@ -73,9 +73,10 @@ def process_text_with_fallback(client, messages, text_model):
             time.sleep(0.1)
     raise Exception(f"Все текстовые модели недоступны. Ошибка: {last_error}")
 
-def process_audio_pipeline(file_path, api_key, text_model="llama-3.3-70b-versatile", client=None):
+def process_audio_pipeline(file_path, api_key, text_model="llama-3.3-70b-versatile", client=None, use_raw_whisper=False):
     """
     Transcribes audio and formats it using Groq.
+    If use_raw_whisper is True, returns raw Whisper transcription without LLM processing.
     """
     try:
         pipeline_start = time.time()
@@ -98,6 +99,18 @@ def process_audio_pipeline(file_path, api_key, text_model="llama-3.3-70b-versati
             return ""
             
         print(f"[Whisper] Распознавание завершено за {whisper_time:.2f}s ({len(raw_text)} симв.)")
+
+        # If raw Whisper mode is enabled, skip LLM processing
+        if use_raw_whisper:
+            print(f"[Raw Mode] Возвращаем сырой текст Whisper без LLM обработки")
+            pipeline_total = time.time() - pipeline_start
+            print(f"[Диагностика] === ИТОГО pipeline: {pipeline_total:.2f}s (Whisper only) ===")
+            return {
+                "text": raw_text,
+                "raw_text": raw_text,
+                "whisper_latency": whisper_time,
+                "llm_latency": 0.0
+            }
 
         system_prompt = (
             "Ты — строгий автоматический редактор распознанного текста (speech-to-text).\n"
