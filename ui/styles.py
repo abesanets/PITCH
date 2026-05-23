@@ -2,6 +2,11 @@
 from PyQt6.QtGui import QColor
 from .styles_data import ACCENT_PRESETS
 
+# Fixed UI accent — independent of the visualizer colour preset
+UI_PRIMARY  = "#3B82F6"   # blue-500
+UI_HOVER    = "#2563EB"   # blue-600
+UI_SELECTED = "#1E3A5F"   # deep navy tint for selected/active backgrounds
+
 
 def _lerp_color(c1, c2, t):
     """Linearly interpolate between two colors"""
@@ -13,22 +18,9 @@ def _lerp_color(c1, c2, t):
     )
 
 
-def _contrast_text(hex_color):
-    """Return '#000000' or '#FFFFFF' for best contrast against hex_color."""
-    c = QColor(hex_color)
-    # Relative luminance (sRGB)
-    lum = 0.2126 * c.redF() + 0.7152 * c.greenF() + 0.0722 * c.blueF()
-    return "#000000" if lum > 0.55 else "#FFFFFF"
-
-
 def get_stylesheet(theme, preset_key="mono"):
-    """Generate stylesheet based on theme and color preset"""
-    if preset_key not in ACCENT_PRESETS:
-        preset_key = "mono"
-    acc = ACCENT_PRESETS[preset_key][theme]
-    primary   = acc["primary"]
-    secondary = acc["secondary"]
-    hover     = acc["hover"]
+    """Generate stylesheet based on theme. preset_key is used only for
+    visualizer-related colours; all UI chrome uses the fixed blue palette."""
 
     if theme == "light":
         bg        = "#F0F2F5"
@@ -43,6 +35,11 @@ def get_stylesheet(theme, preset_key="mono"):
         selected  = "#EFF6FF"
         console   = "#FAFAFA"
         input_bg  = "#FFFFFF"
+        primary   = "#2563EB"
+        hover     = "#1D4ED8"
+        seg_act_bg  = "rgba(37,99,235,0.12)"
+        seg_act_bdr = "rgba(37,99,235,0.40)"
+        seg_act_txt = "#1D4ED8"
     else:
         bg        = "#0F1117"
         sidebar   = "#16181F"
@@ -53,9 +50,14 @@ def get_stylesheet(theme, preset_key="mono"):
         faint     = "#555D6E"
         border    = "#2A2D38"
         nav_hover = "#1F2330"
-        selected  = "#1A2540"
+        selected  = "#1E3A5F"
         console   = "#13151C"
         input_bg  = "#13151C"
+        primary   = "#3B82F6"
+        hover     = "#2563EB"
+        seg_act_bg  = "rgba(59,130,246,0.18)"
+        seg_act_bdr = "rgba(59,130,246,0.50)"
+        seg_act_txt = "#93C5FD"
 
     return f"""
         QWidget#DashboardWindow {{
@@ -235,9 +237,9 @@ def get_stylesheet(theme, preset_key="mono"):
             background: {primary};
             color: #FFFFFF;
         }}
-        QPushButton#PrimaryBtn:hover {{ 
+        QPushButton#PrimaryBtn:hover {{
             background: {hover};
-            color: {_contrast_text(hover)};
+            color: #FFFFFF;
         }}
         QPushButton#PrimaryBtn:disabled {{ background: {border}; color: {faint}; }}
 
@@ -272,16 +274,14 @@ def get_stylesheet(theme, preset_key="mono"):
         }}
         QListWidget::item:hover {{ background: {nav_hover}; color: {text}; }}
         QListWidget::item:selected {{ background: {selected}; color: {text}; }}
-        
+
         /* Hide horizontal scrollbar */
         QScrollBar:horizontal {{
-            border: none; 
-            background: transparent; 
+            border: none;
+            background: transparent;
             height: 0px;
         }}
-        QScrollBar::handle:horizontal {{
-            background: transparent;
-        }}
+        QScrollBar::handle:horizontal {{ background: transparent; }}
         QScrollBar::add-line:horizontal, QScrollBar::sub-line:horizontal {{ width: 0; }}
         QScrollBar::add-page:horizontal, QScrollBar::sub-page:horizontal {{ background: transparent; }}
 
@@ -307,13 +307,62 @@ def get_stylesheet(theme, preset_key="mono"):
             color: {faint};
             letter-spacing: 0.5px;
         }}
+        QLabel#DetailMeta {{
+            font-size: 11px;
+            color: {faint};
+        }}
+        QLabel#HintTitle {{
+            font-weight: 600;
+            font-size: 13px;
+            color: {text};
+        }}
+        QLabel#HintBody {{
+            font-size: 12px;
+            color: {muted};
+        }}
+
+        /* Hotkey badge */
+        QLabel#HotkeyBadge {{
+            font-size: 11px;
+            font-weight: 700;
+            color: {primary};
+            background: rgba(59,130,246,0.12);
+            border: 1px solid rgba(59,130,246,0.35);
+            border-radius: 5px;
+            padding: 3px 8px;
+            letter-spacing: 0.5px;
+        }}
+
+        /* Recent dictation items */
+        QFrame#RecentItem {{
+            background: {surface2};
+            border: 1px solid {border};
+            border-radius: 8px;
+        }}
+        QLabel#RecentSnippet {{
+            font-size: 12px;
+            color: {text};
+        }}
+        QWidget#RecentSnippet {{
+            font-size: 12px;
+            color: {text};
+        }}
+        QLabel#RecentMeta {{
+            font-size: 10px;
+            color: {faint};
+        }}
+        QLabel#HistoryLatency {{
+            font-size: 13px;
+            font-weight: 700;
+            color: {primary};
+        }}
 
         /* Scrollbar */
         QScrollArea {{ background: transparent; border: none; }}
         QScrollBar:vertical {{
-            border: none; 
-            background: transparent; 
-            width: 16px; 
+            border: none;
+            background: transparent;
+            width: 16px;
             margin: 0px;
             border-radius: 8px;
         }}
@@ -322,13 +371,11 @@ def get_stylesheet(theme, preset_key="mono"):
             border-radius: 8px;
         }}
         QScrollBar::handle:vertical {{
-            background: {border}; 
-            min-height: 30px; 
+            background: {border};
+            min-height: 30px;
             border-radius: 8px;
         }}
-        QScrollBar::handle:vertical:hover {{
-            background: {muted};
-        }}
+        QScrollBar::handle:vertical:hover {{ background: {muted}; }}
         QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {{ height: 0; }}
 
         /* Preview frame */
@@ -354,5 +401,14 @@ def get_stylesheet(theme, preset_key="mono"):
         QSlider::sub-page:horizontal {{
             background: {primary};
             border-radius: 2px;
+        }}
+
+        /* SegmentedControl active state — exposed as CSS vars via objectName trick.
+           Actual painting is done in SegmentedControl._update_styles() using
+           the seg_act_* values passed through set_theme(). */
+        QWidget#SegActive {{
+            background: {seg_act_bg};
+            border: 1px solid {seg_act_bdr};
+            color: {seg_act_txt};
         }}
     """

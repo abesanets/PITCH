@@ -12,6 +12,12 @@ class ToggleSwitch(QWidget):
     """Custom toggle switch widget"""
     toggled = pyqtSignal(bool)
 
+    # Fixed blue palette — independent of visualizer preset
+    _COL_ON_DARK   = QColor(59, 130, 246)   # blue-500
+    _COL_OFF_DARK  = QColor(42,  47,  60)   # dark surface
+    _COL_ON_LIGHT  = QColor(37,  99, 235)   # blue-600
+    _COL_OFF_LIGHT = QColor(209, 213, 219)  # gray-300
+
     def __init__(self, parent=None, checked=False):
         super().__init__(parent)
         self.setFixedSize(40, 22)
@@ -19,14 +25,9 @@ class ToggleSwitch(QWidget):
         self._checked = checked
         self._handle_pos = 1.0 if checked else 0.0
         self._theme = "dark"
-        self._on_col1 = QColor(6, 182, 212)
-        self._on_col2 = QColor(16, 185, 129)
         self._anim = QPropertyAnimation(self, b"handle_position", self)
         self._anim.setDuration(160)
         self._anim.setEasingCurve(QEasingCurve.Type.InOutCubic)
-
-    def set_colors(self, c1, c2):
-        self._on_col1 = c1; self._on_col2 = c2; self.update()
 
     def get_handle_position(self): return self._handle_pos
     def set_handle_position(self, v): self._handle_pos = v; self.update()
@@ -36,6 +37,9 @@ class ToggleSwitch(QWidget):
     def setChecked(self, v):
         self._checked = v; self._handle_pos = 1.0 if v else 0.0; self.update()
     def set_theme(self, t): self._theme = t; self.update()
+
+    # Keep signature compatible with old call sites — ignored now
+    def set_colors(self, c1, c2): pass
 
     def mousePressEvent(self, e):
         self._checked = not self._checked
@@ -49,17 +53,15 @@ class ToggleSwitch(QWidget):
         p.setRenderHint(QPainter.RenderHint.Antialiasing)
         w, h = self.width(), self.height()
         r = h / 2
-        if self._handle_pos > 0.01:
-            grad = QLinearGradient(0, 0, w, 0)
-            off = QColor(63, 63, 70) if self._theme == "dark" else QColor(212, 212, 216)
-            t = self._handle_pos
-            grad.setColorAt(0, _lerp_color(off, self._on_col1, t))
-            grad.setColorAt(1, _lerp_color(off, self._on_col2, t))
-            p.setBrush(QBrush(grad))
-        else:
-            p.setBrush(QBrush(QColor(63, 63, 70) if self._theme == "dark" else QColor(212, 212, 216)))
+
+        col_on  = self._COL_ON_DARK  if self._theme == "dark" else self._COL_ON_LIGHT
+        col_off = self._COL_OFF_DARK if self._theme == "dark" else self._COL_OFF_LIGHT
+
+        track = _lerp_color(col_off, col_on, self._handle_pos)
+        p.setBrush(QBrush(track))
         p.setPen(Qt.PenStyle.NoPen)
         p.drawRoundedRect(QRectF(0, 0, w, h), r, r)
+
         m = 3
         d = h - m * 2
         x = m + self._handle_pos * (w - d - m * 2)
@@ -69,7 +71,7 @@ class ToggleSwitch(QWidget):
 
 
 class SegmentedControl(QWidget):
-    """Segmented control widget (chip-style)"""
+    """Segmented control widget (chip-style) — fixed dark-blue palette"""
     currentChanged = pyqtSignal(int)
 
     def __init__(self, options, parent=None):
@@ -102,19 +104,43 @@ class SegmentedControl(QWidget):
     def currentIndex(self): return self._current
     def setCurrentIndex(self, idx): self._current = idx; self._update_styles()
     def set_theme(self, t): self._theme = t; self._update_styles()
+    # Keep signature compatible — accent is now fixed, arg ignored
+    def set_accent(self, primary_hex): pass
 
     def _update_styles(self):
+        if self._theme == "dark":
+            active_bg   = "rgba(59,130,246,0.18)"
+            active_bdr  = "rgba(59,130,246,0.50)"
+            active_txt  = "#93C5FD"          # blue-300 — readable on dark
+            idle_bg     = "#1C1F28"
+            idle_bdr    = "#2A2D38"
+            idle_txt    = "#8B92A5"
+            hover_bg    = "#22252F"
+            hover_txt   = "#F1F3F7"
+        else:
+            active_bg   = "rgba(37,99,235,0.12)"
+            active_bdr  = "rgba(37,99,235,0.40)"
+            active_txt  = "#1D4ED8"          # blue-700
+            idle_bg     = "#FFFFFF"
+            idle_bdr    = "#E5E7EB"
+            idle_txt    = "#6B7280"
+            hover_bg    = "#F3F4F6"
+            hover_txt   = "#0D0D0D"
+
         for i, btn in enumerate(self._buttons):
             if i == self._current:
-                if self._theme == "dark":
-                    btn.setStyleSheet("QPushButton { background:#E8F4FF; color:#0B1220; border:1px solid #E8F4FF; border-radius:6px; font-weight:700; font-size:12px; padding:0 11px; }")
-                else:
-                    btn.setStyleSheet("QPushButton { background:#111827; color:#FFFFFF; border:1px solid #111827; border-radius:6px; font-weight:700; font-size:12px; padding:0 11px; }")
+                btn.setStyleSheet(
+                    f"QPushButton {{ background:{active_bg}; color:{active_txt}; "
+                    f"border:1px solid {active_bdr}; border-radius:6px; "
+                    f"font-weight:700; font-size:12px; padding:0 11px; }}"
+                )
             else:
-                if self._theme == "dark":
-                    btn.setStyleSheet("QPushButton { background:#1C1F28; color:#8B92A5; border:1px solid #2A2D38; border-radius:6px; font-weight:500; font-size:12px; padding:0 11px; } QPushButton:hover { color:#F1F3F7; background:#22252F; }")
-                else:
-                    btn.setStyleSheet("QPushButton { background:#FFFFFF; color:#6B7280; border:1px solid #E5E7EB; border-radius:6px; font-weight:500; font-size:12px; padding:0 11px; } QPushButton:hover { color:#0D0D0D; background:#F9FAFB; }")
+                btn.setStyleSheet(
+                    f"QPushButton {{ background:{idle_bg}; color:{idle_txt}; "
+                    f"border:1px solid {idle_bdr}; border-radius:6px; "
+                    f"font-weight:500; font-size:12px; padding:0 11px; }} "
+                    f"QPushButton:hover {{ color:{hover_txt}; background:{hover_bg}; }}"
+                )
 
     def paintEvent(self, e): super().paintEvent(e)
 
@@ -203,4 +229,42 @@ class ColorPresetSelector(QWidget):
             name = "Custom" if key == "custom" else preset["name"]
             tw = p.fontMetrics().horizontalAdvance(name)
             p.drawText(int(cx - tw / 2), 46, name)
+        p.end()
+
+
+class ElidedLabel(QWidget):
+    """Label that elides text with '…' when it doesn't fit, without causing horizontal scroll."""
+
+    def __init__(self, text="", parent=None):
+        super().__init__(parent)
+        self._text = text
+        self.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Preferred)
+        self.setMinimumWidth(0)
+        # Allow stylesheet color/font to propagate
+        self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, False)
+
+    def setText(self, text):
+        self._text = text
+        self.update()
+
+    def sizeHint(self):
+        from PyQt6.QtCore import QSize
+        fm = self.fontMetrics()
+        return QSize(fm.horizontalAdvance(self._text), fm.height())
+
+    def minimumSizeHint(self):
+        from PyQt6.QtCore import QSize
+        fm = self.fontMetrics()
+        return QSize(0, fm.height())
+
+    def paintEvent(self, e):
+        from PyQt6.QtGui import QPalette
+        p = QPainter(self)
+        p.setFont(self.font())
+        # Use the foreground color set via stylesheet
+        color = self.palette().color(QPalette.ColorRole.WindowText)
+        p.setPen(color)
+        fm = p.fontMetrics()
+        elided = fm.elidedText(self._text, Qt.TextElideMode.ElideRight, self.width())
+        p.drawText(0, fm.ascent(), elided)
         p.end()

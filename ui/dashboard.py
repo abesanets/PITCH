@@ -4,18 +4,17 @@ import sys
 from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel,
                              QLineEdit, QPushButton, QComboBox,
                              QStackedWidget, QPlainTextEdit, QFrame, QApplication,
-                             QListWidget, QListWidgetItem, QGridLayout,
+                             QGridLayout,
                              QSizePolicy, QScrollArea, QSlider, QColorDialog,
                              QDialog)
 from PyQt6.QtCore import (Qt, QTimer, QRectF, QPropertyAnimation, QEasingCurve,
                            pyqtProperty, pyqtSignal, QPointF, QPoint)
-from PyQt6.QtGui import (QPainter, QColor, QPen, QBrush, QFont, QIcon, QPixmap,
-                          QCursor, QPainterPath, QLinearGradient)
+from PyQt6.QtGui import (QPainter, QPen, QBrush, QFont, QIcon, QPixmap,
+                          QCursor, QPainterPath, QLinearGradient, QPalette, QColor)
 
 import history_manager
 from .styles import get_stylesheet
-from .styles_data import ACCENT_PRESETS
-from .widgets import ToggleSwitch, SegmentedControl, ColorPresetSelector
+from .widgets import ToggleSwitch, SegmentedControl, ColorPresetSelector, ElidedLabel
 from .visualizer import PreviewWidget, OverlayWindow
 
 
@@ -104,7 +103,7 @@ class DashboardWindow(QWidget):
 
     def init_ui(self):
         self.setWindowTitle("Echo")
-        self.setFixedSize(700, 500)
+        self.setFixedSize(700, 580)
         self.setWindowFlags(Qt.WindowType.FramelessWindowHint)
 
         # Main vertical layout: title bar + content
@@ -223,11 +222,12 @@ class DashboardWindow(QWidget):
         outer.setContentsMargins(0, 0, 0, 0)
 
         inner = QWidget()
-        inner.setFixedWidth(400)
+        inner.setFixedWidth(420)
         lay = QVBoxLayout(inner)
         lay.setContentsMargins(0, 20, 0, 20)
         lay.setSpacing(10)
 
+        # ── Header ──
         hdr = QHBoxLayout()
         title = QLabel("Обзор")
         title.setObjectName("PageTitle")
@@ -238,30 +238,80 @@ class DashboardWindow(QWidget):
         hdr.addWidget(self.dash_state_badge)
         lay.addLayout(hdr)
 
-        stats_row = QHBoxLayout()
-        stats_row.setSpacing(8)
+        # ── Stats grid 2×2 ──
+        stats_grid = QGridLayout()
+        stats_grid.setSpacing(8)
         c1, self.val_total = self._stat_card("ДИКТОВОК")
         c2, self.val_lat   = self._stat_card("ЗАДЕРЖКА")
         c3, self.val_words = self._stat_card("СЛОВ")
+        c4, self.val_chars = self._stat_card("СИМВОЛОВ")
         self.val_lat.setText("0.0 с")
-        stats_row.addWidget(c1)
-        stats_row.addWidget(c2)
-        stats_row.addWidget(c3)
-        lay.addLayout(stats_row)
+        stats_grid.addWidget(c1, 0, 0)
+        stats_grid.addWidget(c2, 0, 1)
+        stats_grid.addWidget(c3, 1, 0)
+        stats_grid.addWidget(c4, 1, 1)
+        lay.addLayout(stats_grid)
 
-        hint = QFrame()
-        hint.setObjectName("Card")
-        hl = QVBoxLayout(hint)
-        hl.setContentsMargins(14, 12, 14, 12)
-        hl.setSpacing(3)
-        ht = QLabel("Как использовать")
-        ht.setStyleSheet("font-weight: 600; font-size: 13px;")
-        hd = QLabel("Удерживайте Ctrl + Win, говорите, отпустите — текст вставится в активное поле.")
-        hd.setWordWrap(True)
-        hd.setStyleSheet("font-size: 12px;")
-        hl.addWidget(ht)
-        hl.addWidget(hd)
-        lay.addWidget(hint)
+        # ── Hotkey card ──
+        hotkey_card = QFrame()
+        hotkey_card.setObjectName("Card")
+        hkl = QHBoxLayout(hotkey_card)
+        hkl.setContentsMargins(14, 11, 14, 11)
+        hkl.setSpacing(10)
+        hk_icon = QLabel("⌨")
+        hk_icon.setObjectName("HintTitle")
+        hkl.addWidget(hk_icon)
+        hk_text = QLabel("Горячая клавиша")
+        hk_text.setObjectName("FieldLbl")
+        hkl.addWidget(hk_text)
+        hkl.addStretch()
+        self.hotkey_badge = QLabel(self.config.get("hotkey", "ctrl+windows").upper())
+        self.hotkey_badge.setObjectName("HotkeyBadge")
+        hkl.addWidget(self.hotkey_badge)
+        lay.addWidget(hotkey_card)
+
+        # ── Recent dictations ──
+        recent_card = QFrame()
+        recent_card.setObjectName("Card")
+        rcl = QVBoxLayout(recent_card)
+        rcl.setContentsMargins(14, 12, 14, 12)
+        rcl.setSpacing(8)
+
+        recent_hdr = QHBoxLayout()
+        recent_title = QLabel("ПОСЛЕДНИЕ ДИКТОВКИ")
+        recent_title.setObjectName("SectionCap")
+        recent_hdr.addWidget(recent_title)
+        recent_hdr.addStretch()
+        rcl.addLayout(recent_hdr)
+
+        self.recent_items = []
+        for _ in range(3):
+            item_frame = QFrame()
+            item_frame.setObjectName("RecentItem")
+            ifl = QHBoxLayout(item_frame)
+            ifl.setContentsMargins(10, 8, 10, 8)
+            ifl.setSpacing(10)
+
+            left = QVBoxLayout()
+            left.setSpacing(2)
+            snippet = QLabel("—")
+            snippet.setObjectName("RecentSnippet")
+            snippet.setWordWrap(False)
+            ts = QLabel("")
+            ts.setObjectName("RecentMeta")
+            left.addWidget(snippet)
+            left.addWidget(ts)
+
+            right = QLabel("")
+            right.setObjectName("RecentMeta")
+            right.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
+
+            ifl.addLayout(left, 1)
+            ifl.addWidget(right)
+            rcl.addWidget(item_frame)
+            self.recent_items.append((snippet, ts, right))
+
+        lay.addWidget(recent_card)
         lay.addStretch()
 
         outer.addStretch()
@@ -298,56 +348,68 @@ class DashboardWindow(QWidget):
         ctrl = QFrame()
         ctrl.setObjectName("Card")
         cl = QVBoxLayout(ctrl)
-        cl.setContentsMargins(14, 12, 14, 12)
-        cl.setSpacing(10)
+        cl.setContentsMargins(16, 14, 16, 14)
+        cl.setSpacing(14)
 
-        def row(label, widget):
-            r = QHBoxLayout()
-            r.setSpacing(12)
-            lbl = QLabel(label)
-            lbl.setObjectName("FieldLbl")
-            lbl.setFixedWidth(56)
-            r.addWidget(lbl)
-            r.addWidget(widget)
-            r.addStretch()
-            return r
+        def ctrl_cell(label_text, widget):
+            """Vertical cell: small cap label on top, control below."""
+            cell = QWidget()
+            vl = QVBoxLayout(cell)
+            vl.setContentsMargins(0, 0, 0, 0)
+            vl.setSpacing(6)
+            lbl = QLabel(label_text)
+            lbl.setObjectName("SectionCap")
+            vl.addWidget(lbl)
+            vl.addWidget(widget)
+            return cell
 
         self.shape_seg = SegmentedControl(["Волна", "Бары", "Скролл"])
         style_map = {"wave": 0, "bars": 1, "scroll": 2, "dots": 0, "ribbon": 0}
         self.shape_seg.setCurrentIndex(style_map.get(self.config.get("visualizer_style", "wave"), 0))
         self.shape_seg.currentChanged.connect(self._on_shape_changed)
-        cl.addLayout(row("Форма", self.shape_seg))
+
+        self.theme_seg = SegmentedControl(["Dark", "Light"])
+        self.theme_seg.setCurrentIndex(0 if self.config.get("theme", "dark") == "dark" else 1)
+        self.theme_seg.currentChanged.connect(lambda i: self.apply_theme("dark" if i == 0 else "light"))
+
+        # Row 1: Форма | Тема
+        row1 = QHBoxLayout()
+        row1.setSpacing(16)
+        row1.addWidget(ctrl_cell("ФОРМА", self.shape_seg))
+        row1.addWidget(ctrl_cell("ТЕМА", self.theme_seg))
+        cl.addLayout(row1)
 
         self.size_seg = SegmentedControl(["XS", "S", "M", "L", "XL"])
         size_map = {"xs": 0, "small": 1, "medium": 2, "large": 3, "xl": 4}
         self.size_seg.setCurrentIndex(size_map.get(self.config.get("visualizer_size", "medium"), 2))
         self.size_seg.currentChanged.connect(self._on_size_changed)
-        cl.addLayout(row("Размер", self.size_seg))
 
-        self.theme_seg = SegmentedControl(["Dark", "Light"])
-        self.theme_seg.setCurrentIndex(0 if self.config.get("theme", "dark") == "dark" else 1)
-        self.theme_seg.currentChanged.connect(lambda i: self.apply_theme("dark" if i == 0 else "light"))
-        cl.addLayout(row("Тема", self.theme_seg))
+        # Row 2: Размер (full width)
+        cl.addWidget(ctrl_cell("РАЗМЕР", self.size_seg))
 
-        sens_row = QHBoxLayout()
-        sens_row.setSpacing(10)
-        sens_lbl = QLabel("Чувств.")
-        sens_lbl.setObjectName("FieldLbl")
-        sens_lbl.setFixedWidth(56)
+        # Row 3: Чувствительность — slider + value label
+        sens_widget = QWidget()
+        sens_vl = QVBoxLayout(sens_widget)
+        sens_vl.setContentsMargins(0, 0, 0, 0)
+        sens_vl.setSpacing(6)
+        sens_cap = QLabel("ЧУВСТВИТЕЛЬНОСТЬ")
+        sens_cap.setObjectName("SectionCap")
+        sens_vl.addWidget(sens_cap)
+
+        sens_hl = QHBoxLayout()
+        sens_hl.setSpacing(10)
         self.sens_slider = QSlider(Qt.Orientation.Horizontal)
         self.sens_slider.setRange(1, 10)
         saved_sens = self.config.get("visualizer_sensitivity", 1.0)
         self.sens_slider.setValue(max(1, min(10, round(saved_sens * 5))))
-        self.sens_slider.setFixedWidth(130)
         self.sens_val_lbl = QLabel(f"{self.sens_slider.value() / 5:.1f}×")
         self.sens_val_lbl.setObjectName("FieldLbl")
         self.sens_val_lbl.setFixedWidth(34)
         self.sens_slider.valueChanged.connect(self._on_sensitivity_changed)
-        sens_row.addWidget(sens_lbl)
-        sens_row.addWidget(self.sens_slider)
-        sens_row.addWidget(self.sens_val_lbl)
-        sens_row.addStretch()
-        cl.addLayout(sens_row)
+        sens_hl.addWidget(self.sens_slider, 1)
+        sens_hl.addWidget(self.sens_val_lbl)
+        sens_vl.addLayout(sens_hl)
+        cl.addWidget(sens_widget)
 
         lay.addWidget(ctrl)
 
@@ -413,22 +475,20 @@ class DashboardWindow(QWidget):
         outer.setContentsMargins(0, 0, 0, 0)
 
         inner = QWidget()
-        inner.setFixedWidth(400)
+        inner.setFixedWidth(420)
         inner.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Expanding)
         lay = QVBoxLayout(inner)
         lay.setContentsMargins(0, 20, 0, 20)
         lay.setSpacing(10)
-        
-        # Create a stacked widget for history list and detail view
+
         self.history_stack = QStackedWidget()
-        
+
         # ── Page 1: History List ──
         list_page = QWidget()
         list_lay = QVBoxLayout(list_page)
         list_lay.setContentsMargins(0, 0, 0, 0)
         list_lay.setSpacing(10)
-        
-        # Header
+
         hdr = QHBoxLayout()
         title = QLabel("История")
         title.setObjectName("PageTitle")
@@ -440,29 +500,36 @@ class DashboardWindow(QWidget):
         self.btn_clear_history.clicked.connect(self.clear_all_history)
         hdr.addWidget(self.btn_clear_history)
         list_lay.addLayout(hdr)
-        
-        # Search
+
         self.history_search = QLineEdit()
         self.history_search.setPlaceholderText("Поиск...")
         self.history_search.textChanged.connect(self.filter_history)
         list_lay.addWidget(self.history_search)
-        
-        # History list
-        self.history_list = QListWidget()
-        self.history_list.itemClicked.connect(self.show_history_detail)
-        self.history_list.setWordWrap(True)
-        self.history_list.setTextElideMode(Qt.TextElideMode.ElideNone)
-        list_lay.addWidget(self.history_list)
-        
+
+        # Scroll area with card list — no visible scrollbar
+        self.history_scroll = QScrollArea()
+        self.history_scroll.setWidgetResizable(True)
+        self.history_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.history_scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.history_scroll.setFrameShape(QFrame.Shape.NoFrame)
+
+        self.history_cards_widget = QWidget()
+        self.history_cards_layout = QVBoxLayout(self.history_cards_widget)
+        self.history_cards_layout.setContentsMargins(0, 0, 0, 0)
+        self.history_cards_layout.setSpacing(6)
+        self.history_cards_layout.addStretch()
+
+        self.history_scroll.setWidget(self.history_cards_widget)
+        list_lay.addWidget(self.history_scroll, 1)
+
         self.history_stack.addWidget(list_page)
-        
+
         # ── Page 2: Detail View ──
         detail_page = QWidget()
         detail_lay = QVBoxLayout(detail_page)
         detail_lay.setContentsMargins(0, 0, 0, 0)
         detail_lay.setSpacing(10)
-        
-        # Back button and title
+
         back_hdr = QHBoxLayout()
         self.btn_back_to_list = QPushButton("← Назад")
         self.btn_back_to_list.setObjectName("SecondaryBtn")
@@ -472,29 +539,25 @@ class DashboardWindow(QWidget):
         back_hdr.addWidget(self.btn_back_to_list)
         back_hdr.addStretch()
         detail_lay.addLayout(back_hdr)
-        
-        # Meta info
+
         self.detail_meta = QLabel()
-        self.detail_meta.setStyleSheet("font-size: 11px; color: #555D6E;")
+        self.detail_meta.setObjectName("DetailMeta")
         detail_lay.addWidget(self.detail_meta)
-        
-        # Raw text
+
         self.lbl_raw = QLabel("WHISPER")
         self.lbl_raw.setObjectName("DetailLbl")
         self.txt_raw = QPlainTextEdit()
         self.txt_raw.setReadOnly(True)
         detail_lay.addWidget(self.lbl_raw)
         detail_lay.addWidget(self.txt_raw)
-        
-        # Clean text
+
         self.lbl_clean = QLabel("LLM")
         self.lbl_clean.setObjectName("DetailLbl")
         self.txt_clean = QPlainTextEdit()
         self.txt_clean.setReadOnly(True)
         detail_lay.addWidget(self.lbl_clean)
         detail_lay.addWidget(self.txt_clean)
-        
-        # Copy buttons
+
         copy_lay = QHBoxLayout()
         copy_lay.setSpacing(8)
         self.btn_copy_raw = QPushButton("Копировать сырой")
@@ -505,20 +568,17 @@ class DashboardWindow(QWidget):
         self.btn_copy_clean.setObjectName("PrimaryBtn")
         self.btn_copy_clean.setCursor(Qt.CursorShape.PointingHandCursor)
         self.btn_copy_clean.clicked.connect(self.copy_clean_text)
-        copy_lay.addWidget(self.btn_copy_raw)
-        copy_lay.addWidget(self.btn_copy_clean)
-        copy_lay.addStretch()
+        copy_lay.addWidget(self.btn_copy_raw, 1)
+        copy_lay.addWidget(self.btn_copy_clean, 1)
         detail_lay.addLayout(copy_lay)
-        
+
         self.history_stack.addWidget(detail_page)
-        
+
         lay.addWidget(self.history_stack)
-        lay.addStretch()
 
         outer.addStretch()
         outer.addWidget(inner)
         outer.addStretch()
-        
         self.stack.addWidget(page)
 
     def _build_settings_tab(self):
@@ -658,10 +718,6 @@ class DashboardWindow(QWidget):
             preset = self.config.get("visualizer_color_preset", "mono")
         self.setStyleSheet(get_stylesheet(theme, preset))
 
-        if preset in ACCENT_PRESETS:
-            acc = ACCENT_PRESETS[preset][theme]
-            self.startup_toggle.set_colors(QColor(acc["primary"]), QColor(acc["secondary"]))
-
         self.startup_toggle.set_theme(theme)
         self.theme_seg.set_theme(theme)
         self.shape_seg.set_theme(theme)
@@ -724,27 +780,79 @@ class DashboardWindow(QWidget):
 
     def filter_history(self):
         query = self.history_search.text().lower()
-        self.history_list.clear()
-        for idx, entry in enumerate(self.history_entries):
-            if query in entry.get("raw_text", "").lower() or query in entry.get("cleaned_text", "").lower():
-                time_str = entry.get("timestamp", "").split()[-1][:5]
-                snippet = entry.get("cleaned_text", "")[:150].replace("\n", " ")
-                if len(entry.get("cleaned_text", "")) > 150: snippet += "…"
-                item = QListWidgetItem(f"{time_str}  {snippet}")
-                item.setData(Qt.ItemDataRole.UserRole, idx)
-                self.history_list.addItem(item)
 
-    def show_history_detail(self, item):
-        """Show detail view for selected history item"""
-        idx = item.data(Qt.ItemDataRole.UserRole)
+        # Remove all cards (keep the trailing stretch)
+        while self.history_cards_layout.count() > 1:
+            item = self.history_cards_layout.takeAt(0)
+            if item.widget():
+                item.widget().deleteLater()
+
+        for idx, entry in enumerate(self.history_entries):
+            raw   = entry.get("raw_text", "")
+            clean = entry.get("cleaned_text", "")
+            if query and query not in raw.lower() and query not in clean.lower():
+                continue
+
+            text = clean or raw
+            snippet = text[:80].replace("\n", " ")
+            if len(text) > 80:
+                snippet += "…"
+            time_str = entry.get("timestamp", "").split()[-1][:5]
+            date_str = entry.get("timestamp", "").split()[0] if " " in entry.get("timestamp", "") else ""
+            lat_str  = f"{entry.get('total_latency', 0):.1f}с"
+            words    = entry.get("word_count", 0)
+
+            card = QFrame()
+            card.setObjectName("RecentItem")
+            card.setCursor(Qt.CursorShape.PointingHandCursor)
+            cl = QHBoxLayout(card)
+            cl.setContentsMargins(12, 10, 12, 10)
+            cl.setSpacing(10)
+
+            left = QVBoxLayout()
+            left.setSpacing(3)
+            snip_lbl = ElidedLabel(snippet if snippet else "—")
+            snip_lbl.setObjectName("RecentSnippet")
+            snip_lbl.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Preferred)
+            # Apply theme-appropriate text color directly via palette
+            pal = snip_lbl.palette()
+            text_color = "#F1F3F7" if self.theme_name == "dark" else "#0D0D0D"
+            pal.setColor(QPalette.ColorRole.WindowText, QColor(text_color))
+            snip_lbl.setPalette(pal)
+            meta_lbl = QLabel(f"{date_str}  {time_str}  ·  {words} сл.")
+            meta_lbl.setObjectName("RecentMeta")
+            left.addWidget(snip_lbl)
+            left.addWidget(meta_lbl)
+
+            right_lbl = QLabel(lat_str)
+            right_lbl.setObjectName("HistoryLatency")
+            right_lbl.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
+            right_lbl.setFixedWidth(44)
+
+            cl.addLayout(left, 1)
+            cl.addWidget(right_lbl, 0)
+
+            # Capture idx for click handler
+            card.mousePressEvent = lambda e, i=idx: self._open_history_entry(i)
+
+            self.history_cards_layout.insertWidget(
+                self.history_cards_layout.count() - 1, card
+            )
+
+    def _open_history_entry(self, idx):
+        """Show detail view for selected history entry"""
         if idx is not None and idx < len(self.history_entries):
             e = self.history_entries[idx]
             self.txt_raw.setPlainText(e.get("raw_text", ""))
             self.txt_clean.setPlainText(e.get("cleaned_text", ""))
-            self.detail_meta.setText(f"{e.get('timestamp','')}  ·  {e.get('total_latency',0):.1f}s  ·  {e.get('model','')}")
-            
-            # Switch to detail page
+            self.detail_meta.setText(
+                f"{e.get('timestamp','')}  ·  {e.get('total_latency',0):.1f}с  ·  {e.get('model','')}"
+            )
             self.history_stack.setCurrentIndex(1)
+
+    def show_history_detail(self, item):
+        """Legacy — kept for compatibility, not used with card layout"""
+        pass
 
     def hide_history_detail(self):
         """Return to history list view"""
@@ -763,6 +871,27 @@ class DashboardWindow(QWidget):
         self.val_total.setText(str(stats["total_dictations"]))
         self.val_lat.setText(f"{stats['avg_total_latency']:.1f} с")
         self.val_words.setText(str(stats["total_words"]))
+        self.val_chars.setText(str(stats["total_chars"]))
+
+        # Update hotkey badge
+        self.hotkey_badge.setText(self.config.get("hotkey", "ctrl+windows").upper())
+
+        # Update recent dictations
+        entries = history_manager.load_history()[:3]
+        for i, (snippet_lbl, ts_lbl, right_lbl) in enumerate(self.recent_items):
+            if i < len(entries):
+                e = entries[i]
+                text = e.get("cleaned_text") or e.get("raw_text", "")
+                short = text[:55].replace("\n", " ")
+                if len(text) > 55:
+                    short += "…"
+                snippet_lbl.setText(short if short else "—")
+                ts_lbl.setText(e.get("timestamp", "").split()[-1][:5])
+                right_lbl.setText(f"{e.get('total_latency', 0):.1f}с")
+            else:
+                snippet_lbl.setText("—")
+                ts_lbl.setText("")
+                right_lbl.setText("")
 
     def toggle_api_visibility(self):
         if self.api_input.echoMode() == QLineEdit.EchoMode.Password:
