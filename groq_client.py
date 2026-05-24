@@ -2,6 +2,28 @@ import os
 import re
 import time
 
+# Паттерны ложных срабатываний Whisper — фразы, которые модель генерирует
+# при тишине, фоновом шуме или слишком коротком аудио.
+_HALLUCINATION_PATTERNS = [
+    re.compile(r"^\s*продолжение следует[\s…\.]*$", re.IGNORECASE),
+    re.compile(r"^\s*субтитры (сделаны|добавлены|создан\w*)[\s\S]*$", re.IGNORECASE),
+    re.compile(r"^\s*редактор субтитров[\s\S]*$", re.IGNORECASE),
+    # Английские аналоги
+    re.compile(r"^\s*to be continued[\s…\.]*$", re.IGNORECASE),
+    re.compile(r"^\s*subtitles (by|made by|created by)[\s\S]*$", re.IGNORECASE),
+    re.compile(r"^\s*thank(s| you) for watching[\s…\.]*$", re.IGNORECASE),
+    re.compile(r"^\s*\[?(music|музыка|аплодисменты|applause)\]?[\s…\.]*$", re.IGNORECASE),
+]
+
+def is_hallucination(text: str) -> bool:
+    """Возвращает True, если текст является известной галлюцинацией Whisper."""
+    if not text or not text.strip():
+        return True
+    for pattern in _HALLUCINATION_PATTERNS:
+        if pattern.match(text.strip()):
+            return True
+    return False
+
 def strip_reasoning_tags(text):
     if not text:
         return text
@@ -103,6 +125,10 @@ def process_audio_pipeline(file_path, api_key, text_model="llama-3.3-70b-versati
         
         if not raw_text.strip():
             print(f"[Whisper] Пустая аудиозапись ({whisper_time:.2f}s)")
+            return ""
+
+        if is_hallucination(raw_text):
+            print(f"[Whisper] Галлюцинация отфильтрована ({whisper_time:.2f}s): «{raw_text.strip()}»")
             return ""
             
         print(f"[Whisper] Распознавание завершено за {whisper_time:.2f}s ({len(raw_text)} симв.)")

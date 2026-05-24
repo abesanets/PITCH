@@ -74,6 +74,7 @@ class VoiceAssistant:
         self.warmup_started = False
         self.is_recording = False
         self.is_processing = False
+        self.recording_start_time = None  # для проверки минимальной длительности
         self.dashboard = None
         
         self.setup_signals()
@@ -271,23 +272,37 @@ class VoiceAssistant:
     def start_recording(self):
         if self.is_recording or self.is_processing: return
         self.is_recording = True
+        self.recording_start_time = time.time()
         self.signals.state_changed.emit("recording")
         self.recorder.start_recording(volume_callback=self.volume_callback)
 
     def stop_recording(self):
         if not self.is_recording: return
         self.is_recording = False
+
+        # Минимальная длительность записи — защита от случайных нажатий
+        MIN_RECORDING_DURATION = 0.5  # секунд
+        duration = time.time() - (self.recording_start_time or 0)
+        self.recorder.stop_recording()  # всегда останавливаем поток
+
+        if duration < MIN_RECORDING_DURATION:
+            print(f"[Запись] Слишком короткая запись ({duration:.2f}s < {MIN_RECORDING_DURATION}s), игнорируем.")
+            self.signals.state_changed.emit("idle")
+            return
+
         self.is_processing = True
         self.signals.state_changed.emit("processing")
-        
-        filename = self.recorder.stop_recording()
-        
-        if filename:
-            model = self.config.get("text_model", "llama-3.3-70b-versatile")
-            threading.Thread(target=self.process_audio_thread, args=(filename, model), daemon=True).start()
-        else:
+
+        # Получаем уже сохранённый файл (stop_recording уже вызван выше)
+        filename = self.recorder.get_temp_filename()
+        import os
+        if not os.path.exists(filename):
             self.signals.state_changed.emit("idle")
             self.is_processing = False
+            return
+
+        model = self.config.get("text_model", "llama-3.3-70b-versatile")
+        threading.Thread(target=self.process_audio_thread, args=(filename, model), daemon=True).start()
 
     def process_audio_thread(self, filename, text_model):
         client = self.get_groq_client()
