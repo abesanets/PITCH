@@ -25,7 +25,7 @@ class PreviewWidget(QWidget):
         self._demo_target = 0.6
         self._time_counter = 0.0
         self._scroll_offset = 0.0
-        self._bg_mode = "solid"  # "solid", "none", "gradient"
+        self._bg_mode = "solid"  # "solid", "none"
         self._custom_colors = {
             "dark": [QColor(244, 244, 245, 255), QColor(161, 161, 170, 160), QColor(113, 113, 122, 100)],
             "light": [QColor(24, 24, 27, 255), QColor(113, 113, 122, 140), QColor(161, 161, 170, 100)]
@@ -73,22 +73,6 @@ class PreviewWidget(QWidget):
             bg = QColor(9, 9, 11, 245) if self._theme == "dark" else QColor(250, 250, 250, 240)
             brd = QColor(39, 39, 42) if self._theme == "dark" else QColor(228, 228, 231)
             p.setBrush(QBrush(bg))
-            p.setPen(QPen(brd, 1))
-            p.drawRoundedRect(QRectF(ox, oy, ow, oh), 8, 8)
-        elif self._bg_mode == "gradient":
-            # Gradient from center line fading to edges
-            bg = QColor(9, 9, 11, 245) if self._theme == "dark" else QColor(250, 250, 250, 240)
-            brd = QColor(39, 39, 42) if self._theme == "dark" else QColor(228, 228, 231)
-            
-            # Create vertical gradient (fades from center to top/bottom) - lighter opacity
-            grad = QLinearGradient(ox, oy, ox, oy + oh)
-            grad.setColorAt(0.0, QColor(bg.red(), bg.green(), bg.blue(), 0))
-            grad.setColorAt(0.3, QColor(bg.red(), bg.green(), bg.blue(), 100))
-            grad.setColorAt(0.5, QColor(bg.red(), bg.green(), bg.blue(), 140))
-            grad.setColorAt(0.7, QColor(bg.red(), bg.green(), bg.blue(), 100))
-            grad.setColorAt(1.0, QColor(bg.red(), bg.green(), bg.blue(), 0))
-            
-            p.setBrush(QBrush(grad))
             p.setPen(QPen(brd, 1))
             p.drawRoundedRect(QRectF(ox, oy, ow, oh), 8, 8)
         # For "none" mode, skip background drawing entirely
@@ -190,7 +174,7 @@ class OverlayWindow(QWidget):
         self.vis_style = "wave"
         self.color_preset = "mono"
         self.size_key = "medium"
-        self.bg_mode = "solid"  # "solid", "none", "gradient"
+        self.bg_mode = "solid"  # "solid", "none"
         self.custom_colors = {
             "dark": [QColor(244, 244, 245, 255), QColor(161, 161, 170, 160), QColor(113, 113, 122, 100)],
             "light": [QColor(24, 24, 27, 255), QColor(113, 113, 122, 140), QColor(161, 161, 170, 100)]
@@ -308,21 +292,6 @@ class OverlayWindow(QWidget):
         # Draw background based on mode
         if self.bg_mode == "solid":
             painter.setBrush(QBrush(bg_color))
-            painter.setPen(Qt.PenStyle.NoPen)
-            painter.drawRoundedRect(QRectF(0, 0, w, h), 10, 10)
-            painter.setBrush(Qt.BrushStyle.NoBrush)
-            painter.setPen(QPen(glow_color, 1))
-            painter.drawRoundedRect(QRectF(1.5, 1.5, w - 3, h - 3), 9, 9)
-        elif self.bg_mode == "gradient":
-            # Gradient from center line fading to edges - lighter opacity
-            grad = QLinearGradient(0, 0, 0, h)
-            grad.setColorAt(0.0, QColor(bg_color.red(), bg_color.green(), bg_color.blue(), 0))
-            grad.setColorAt(0.3, QColor(bg_color.red(), bg_color.green(), bg_color.blue(), 70))
-            grad.setColorAt(0.5, QColor(bg_color.red(), bg_color.green(), bg_color.blue(), 110))
-            grad.setColorAt(0.7, QColor(bg_color.red(), bg_color.green(), bg_color.blue(), 70))
-            grad.setColorAt(1.0, QColor(bg_color.red(), bg_color.green(), bg_color.blue(), 0))
-            
-            painter.setBrush(QBrush(grad))
             painter.setPen(Qt.PenStyle.NoPen)
             painter.drawRoundedRect(QRectF(0, 0, w, h), 10, 10)
             painter.setBrush(Qt.BrushStyle.NoBrush)

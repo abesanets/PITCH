@@ -325,27 +325,39 @@ class DashboardWindow(QWidget):
         outer.setContentsMargins(0, 0, 0, 0)
 
         inner = QWidget()
-        inner.setFixedWidth(400)
+        inner.setFixedWidth(420)
         lay = QVBoxLayout(inner)
         lay.setContentsMargins(0, 20, 0, 20)
         lay.setSpacing(10)
 
+        # ── Header ──
+        hdr = QHBoxLayout()
         title = QLabel("Визуализатор")
         title.setObjectName("PageTitle")
-        lay.addWidget(title)
+        hdr.addWidget(title)
+        hdr.addStretch()
+        lay.addLayout(hdr)
 
-        preview_frame = QFrame()
-        preview_frame.setObjectName("PreviewFrame")
-        pfl = QVBoxLayout(preview_frame)
-        pfl.setContentsMargins(0, 0, 0, 0)
+        # ── Preview card ──
+        preview_card = QFrame()
+        preview_card.setObjectName("Card")
+        pcl = QVBoxLayout(preview_card)
+        pcl.setContentsMargins(14, 12, 14, 12)
+        pcl.setSpacing(8)
+
+        preview_cap = QLabel("ПРЕДПРОСМОТР")
+        preview_cap.setObjectName("SectionCap")
+        pcl.addWidget(preview_cap)
+
         self.preview_widget = PreviewWidget()
         self.preview_widget.set_style(self.config.get("visualizer_style", "wave"))
         self.preview_widget.set_preset(self.config.get("visualizer_color_preset", "mono"))
         self.preview_widget.set_size(self.config.get("visualizer_size", "medium"))
         self.preview_widget.set_bg_mode(self.config.get("visualizer_bg_mode", "solid"))
-        pfl.addWidget(self.preview_widget)
-        lay.addWidget(preview_frame)
+        pcl.addWidget(self.preview_widget)
+        lay.addWidget(preview_card)
 
+        # ── Controls card ──
         ctrl = QFrame()
         ctrl.setObjectName("Card")
         cl = QVBoxLayout(ctrl)
@@ -373,8 +385,8 @@ class DashboardWindow(QWidget):
         self.theme_seg.setCurrentIndex(0 if self.config.get("theme", "dark") == "dark" else 1)
         self.theme_seg.currentChanged.connect(lambda i: self.apply_theme("dark" if i == 0 else "light"))
 
-        self.bg_seg = SegmentedControl(["Сплошной", "Без фона", "Градиент"])
-        bg_map = {"solid": 0, "none": 1, "gradient": 2}
+        self.bg_seg = SegmentedControl(["Сплошной", "Без фона"])
+        bg_map = {"solid": 0, "none": 1}
         self.bg_seg.setCurrentIndex(bg_map.get(self.config.get("visualizer_bg_mode", "solid"), 0))
         self.bg_seg.currentChanged.connect(self._on_bg_mode_changed)
 
@@ -390,13 +402,14 @@ class DashboardWindow(QWidget):
         row1.addWidget(ctrl_cell("ТЕМА", self.theme_seg))
         cl.addLayout(row1)
 
-        # Row 2: Фон (full width)
-        cl.addWidget(ctrl_cell("ФОН", self.bg_seg))
+        # Row 2: Фон | Размер
+        row2 = QHBoxLayout()
+        row2.setSpacing(16)
+        row2.addWidget(ctrl_cell("ФОН", self.bg_seg))
+        row2.addWidget(ctrl_cell("РАЗМЕР", self.size_seg))
+        cl.addLayout(row2)
 
-        # Row 3: Размер (full width)
-        cl.addWidget(ctrl_cell("РАЗМЕР", self.size_seg))
-
-        # Row 4: Чувствительность — slider + value label
+        # Row 3: Чувствительность — slider + value label
         sens_widget = QWidget()
         sens_vl = QVBoxLayout(sens_widget)
         sens_vl.setContentsMargins(0, 0, 0, 0)
@@ -419,17 +432,19 @@ class DashboardWindow(QWidget):
         sens_hl.addWidget(self.sens_val_lbl)
         sens_vl.addLayout(sens_hl)
         cl.addWidget(sens_widget)
-
         lay.addWidget(ctrl)
 
+        # ── Color card ──
         color_card = QFrame()
         color_card.setObjectName("Card")
         ccl = QVBoxLayout(color_card)
-        ccl.setContentsMargins(14, 10, 14, 10)
-        ccl.setSpacing(6)
-        cap = QLabel("ЦВЕТ")
-        cap.setObjectName("SectionCap")
-        ccl.addWidget(cap)
+        ccl.setContentsMargins(14, 12, 14, 12)
+        ccl.setSpacing(8)
+        
+        color_cap = QLabel("ЦВЕТ")
+        color_cap.setObjectName("SectionCap")
+        ccl.addWidget(color_cap)
+        
         self.color_selector = ColorPresetSelector()
         self.color_selector.setCurrentPreset(self.config.get("visualizer_color_preset", "mono"))
         self.color_selector.presetChanged.connect(self._on_preset_changed)
@@ -448,7 +463,7 @@ class DashboardWindow(QWidget):
         self._auto_save_visualizer()
 
     def _on_bg_mode_changed(self, idx):
-        self.preview_widget.set_bg_mode(["solid", "none", "gradient"][idx])
+        self.preview_widget.set_bg_mode(["solid", "none"][idx])
         self._auto_save_visualizer()
 
     def _on_size_changed(self, idx):
@@ -474,7 +489,7 @@ class DashboardWindow(QWidget):
         self.config["visualizer_style"] = ["wave", "bars", "scroll"][self.shape_seg.currentIndex()]
         self.config["visualizer_size"]  = ["xs", "small", "medium", "large", "xl"][self.size_seg.currentIndex()]
         self.config["visualizer_color_preset"] = self.color_selector.currentPreset()
-        self.config["visualizer_bg_mode"] = ["solid", "none", "gradient"][self.bg_seg.currentIndex()]
+        self.config["visualizer_bg_mode"] = ["solid", "none"][self.bg_seg.currentIndex()]
         self.config["theme"] = "dark" if self.theme_seg.currentIndex() == 0 else "light"
         self.config["visualizer_sensitivity"] = self.sens_slider.value() / 5.0
         self.save_callback(self.config)

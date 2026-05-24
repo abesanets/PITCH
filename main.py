@@ -93,8 +93,11 @@ class VoiceAssistant:
         self.signals.processing_done.connect(self.on_processing_done)
 
     def on_state_changed(self, state):
-        if self.dashboard is not None and self.dashboard.isVisible():
-            self.dashboard.set_system_state(state)
+        if hasattr(self, 'dashboard') and self.dashboard is not None and self.dashboard.isVisible():
+            try:
+                self.dashboard.set_system_state(state)
+            except Exception:
+                pass
 
     def setup_tray(self):
         self.tray = QSystemTrayIcon()
@@ -182,8 +185,11 @@ class VoiceAssistant:
             print(f"Registry: error updating startup: {e}")
 
     def on_log_message(self, message):
-        if self.dashboard is not None and self.dashboard.isVisible():
-            self.dashboard.append_log(message)
+        if hasattr(self, 'dashboard') and self.dashboard is not None and self.dashboard.isVisible():
+            try:
+                self.dashboard.append_log(message)
+            except Exception:
+                pass
 
     def start_background_warmup(self, force=False):
         if self.warmup_started and not force:
