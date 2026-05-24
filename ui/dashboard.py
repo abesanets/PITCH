@@ -502,6 +502,7 @@ class DashboardWindow(QWidget):
         self.config["theme"]      = "dark" if self.theme_seg.currentIndex() == 0 else "light"
         self.config["run_on_startup"] = self.startup_toggle.isChecked()
         self.config["use_raw_whisper"] = self.raw_whisper_toggle.isChecked()
+        self.config["groq_base_url"] = self.base_url_input.text().strip()
         self.save_callback(self.config)
 
     def _build_history_tab(self):
@@ -671,6 +672,14 @@ class DashboardWindow(QWidget):
         api_input_row.addWidget(self.btn_toggle_api)
 
         acl.addLayout(api_input_row)
+
+        # Groq Base URL input (for Cloudflare Workers proxy)
+        self.base_url_input = QLineEdit()
+        self.base_url_input.setText(self.config.get("groq_base_url", ""))
+        self.base_url_input.setPlaceholderText("https://your-worker.your-subdomain.workers.dev (without /openai/v1)")
+        self.base_url_input.editingFinished.connect(self._auto_save_settings)
+
+        acl.addWidget(self.base_url_input)
         lay.addWidget(api_card)
 
         # ── Input + Model card ──

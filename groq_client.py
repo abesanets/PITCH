@@ -73,7 +73,7 @@ def process_text_with_fallback(client, messages, text_model):
             time.sleep(0.1)
     raise Exception(f"Все текстовые модели недоступны. Ошибка: {last_error}")
 
-def process_audio_pipeline(file_path, api_key, text_model="llama-3.3-70b-versatile", client=None, use_raw_whisper=False):
+def process_audio_pipeline(file_path, api_key, text_model="llama-3.3-70b-versatile", client=None, use_raw_whisper=False, base_url=""):
     """
     Transcribes audio and formats it using Groq.
     If use_raw_whisper is True, returns raw Whisper transcription without LLM processing.
@@ -84,7 +84,14 @@ def process_audio_pipeline(file_path, api_key, text_model="llama-3.3-70b-versati
         if client is None:
             from groq import Groq
             t_client = time.time()
-            client = Groq(api_key=api_key)
+            # Use custom base_url if provided (for Cloudflare Workers proxy)
+            client_kwargs = {"api_key": api_key}
+            if base_url:
+                # Remove trailing /openai/v1 if present (SDK adds it automatically)
+                if base_url.endswith("/openai/v1"):
+                    base_url = base_url[:-10]
+                client_kwargs["base_url"] = base_url
+            client = Groq(**client_kwargs)
             print(f"[Диагностика] Создание нового Groq клиента: {time.time() - t_client:.3f}s")
         else:
             print(f"[Диагностика] Используется существующий Groq клиент")

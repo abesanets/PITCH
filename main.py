@@ -143,9 +143,11 @@ class VoiceAssistant:
         self.dashboard.activateWindow()
 
     def on_settings_saved(self, new_config):
-        if new_config.get("api_key") != self.config.get("api_key"):
+        # Reset Groq client if API key or base_url changed
+        if (new_config.get("api_key") != self.config.get("api_key") or
+            new_config.get("groq_base_url") != self.config.get("groq_base_url")):
             with self.groq_client_lock:
-                self.groq_client = None  # Пересоздать клиент при смене API ключа
+                self.groq_client = None  # Пересоздать клиент при смене API ключа или base_url
         self.config = new_config
         save_config(self.config)
         self.update_startup_registry(self.config.get("run_on_startup", False))
@@ -211,7 +213,17 @@ class VoiceAssistant:
             if self.groq_client is None:
                 from groq import Groq
                 t_client = time.time()
-                self.groq_client = Groq(api_key=self.config["api_key"])
+                # Use custom base_url if configured (for Cloudflare Workers proxy)
+                client_kwargs = {"api_key": self.config["api_key"]}
+                base_url = self.config.get("groq_base_url", "").strip()
+                if base_url:
+                    # Remove trailing /openai/v1 if present (SDK adds it automatically)
+                    if base_url.endswith("/openai/v1"):
+                        base_url = base_url[:-10]
+                        print(f"[Диагностика] Удалён /openai/v1 из base_url (SDK добавляет автоматически)")
+                    client_kwargs["base_url"] = base_url
+                    print(f"[Диагностика] Используем кастомный base_url: {base_url}")
+                self.groq_client = Groq(**client_kwargs)
                 print(f"[Диагностика] Groq клиент готов: {time.time() - t_client:.3f}s")
             return self.groq_client
 
@@ -266,7 +278,8 @@ class VoiceAssistant:
     def process_audio_thread(self, filename, text_model):
         client = self.get_groq_client()
         use_raw = self.config.get("use_raw_whisper", False)
-        result = process_audio_pipeline(filename, self.config["api_key"], text_model, client=client, use_raw_whisper=use_raw)
+        base_url = self.config.get("groq_base_url", "").strip()
+        result = process_audio_pipeline(filename, self.config["api_key"], text_model, client=client, use_raw_whisper=use_raw, base_url=base_url)
         if isinstance(result, dict):
             import history_manager
             history_manager.add_history_entry(

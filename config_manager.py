@@ -15,6 +15,7 @@ def load_config():
         "visualizer_size": "medium",
         "visualizer_sensitivity": 1.0,
         "use_raw_whisper": False,
+        "groq_base_url": "",
     }
     if os.path.exists(CONFIG_FILE):
         try:
