@@ -132,6 +132,7 @@ class DashboardWindow(QWidget):
         self._build_visualizer_tab()
         self._build_history_tab()
         self._build_settings_tab()
+        self._build_recognition_tab()
         self._build_logs_tab()
 
         icon_name = "p.jpeg"
@@ -170,11 +171,12 @@ class DashboardWindow(QWidget):
 
         self.nav_buttons = []
         nav_items = [
-            ("Обзор",        0),
-            ("Визуализатор", 1),
-            ("История",      2),
-            ("Настройки",    3),
-            ("Логи",         4),
+            ("Обзор",          0),
+            ("Визуализатор",   1),
+            ("История",        2),
+            ("Настройки",      3),
+            ("Распознавание",  4),
+            ("Логи",           5),
         ]
         for label, idx in nav_items:
             btn = QPushButton(label)
@@ -495,7 +497,6 @@ class DashboardWindow(QWidget):
         self.config["text_model"] = self.model_combo.currentText()
         self.config["theme"]      = "dark" if self.theme_seg.currentIndex() == 0 else "light"
         self.config["run_on_startup"] = self.startup_toggle.isChecked()
-        self.config["use_raw_whisper"] = self.raw_whisper_toggle.isChecked()
         # Don't save base_url here - it's handled by _on_base_url_changed
         self.save_callback(self.config)
 
@@ -754,37 +755,115 @@ class DashboardWindow(QWidget):
         scl.addLayout(toggle_row)
         lay.addWidget(sys_card)
 
-        # ── Processing card ──
-        proc_card = QFrame()
-        proc_card.setObjectName("Card")
-        pcl = QVBoxLayout(proc_card)
-        pcl.setContentsMargins(16, 14, 16, 14)
-        pcl.setSpacing(0)
-
-        self.raw_whisper_toggle = ToggleSwitch(checked=self.config.get("use_raw_whisper", False))
-        self.raw_whisper_toggle.toggled.connect(self._auto_save_settings)
-
-        raw_toggle_row = QHBoxLayout()
-        raw_toggle_row.setSpacing(12)
-        raw_lbl_block = QVBoxLayout()
-        raw_lbl_block.setSpacing(2)
-        raw_title = QLabel("Сырой Whisper")
-        raw_title.setObjectName("FieldLbl")
-        raw_sub = QLabel("Быстрее, но без улучшения качества LLM")
-        raw_sub.setObjectName("DetailMeta")
-        raw_lbl_block.addWidget(raw_title)
-        raw_lbl_block.addWidget(raw_sub)
-        raw_toggle_row.addLayout(raw_lbl_block, 1)
-        raw_toggle_row.addWidget(self.raw_whisper_toggle)
-        pcl.addLayout(raw_toggle_row)
-        lay.addWidget(proc_card)
-
         lay.addStretch()
 
         outer.addStretch()
         outer.addWidget(inner)
         outer.addStretch()
         self.stack.addWidget(page)
+
+    def _build_recognition_tab(self):
+        page = QWidget()
+        outer = QHBoxLayout(page)
+        outer.setContentsMargins(0, 0, 0, 0)
+
+        inner = QWidget()
+        inner.setFixedWidth(400)
+        lay = QVBoxLayout(inner)
+        lay.setContentsMargins(0, 20, 0, 20)
+        lay.setSpacing(10)
+
+        title = QLabel("Распознавание")
+        title.setObjectName("PageTitle")
+        lay.addWidget(title)
+
+        def toggle_row(parent_layout, title_text, sub_text, toggle_widget):
+            row = QHBoxLayout()
+            row.setSpacing(12)
+            lbl_block = QVBoxLayout()
+            lbl_block.setSpacing(2)
+            t = QLabel(title_text)
+            t.setObjectName("FieldLbl")
+            s = QLabel(sub_text)
+            s.setObjectName("DetailMeta")
+            lbl_block.addWidget(t)
+            lbl_block.addWidget(s)
+            row.addLayout(lbl_block, 1)
+            row.addWidget(toggle_widget)
+            parent_layout.addLayout(row)
+
+        # ── Whisper card ──
+        whisper_card = QFrame()
+        whisper_card.setObjectName("Card")
+        wcl = QVBoxLayout(whisper_card)
+        wcl.setContentsMargins(16, 14, 16, 14)
+        wcl.setSpacing(14)
+
+        whisper_cap = QLabel("WHISPER")
+        whisper_cap.setObjectName("SectionCap")
+        wcl.addWidget(whisper_cap)
+
+        self.raw_whisper_toggle = ToggleSwitch(checked=self.config.get("use_raw_whisper", False))
+        self.raw_whisper_toggle.toggled.connect(self._auto_save_recognition)
+        toggle_row(wcl, "Сырой Whisper",
+                   "Быстрее, но без улучшения качества LLM",
+                   self.raw_whisper_toggle)
+
+        lay.addWidget(whisper_card)
+
+        # ── Фильтрация card ──
+        filter_card = QFrame()
+        filter_card.setObjectName("Card")
+        fcl = QVBoxLayout(filter_card)
+        fcl.setContentsMargins(16, 14, 16, 14)
+        fcl.setSpacing(14)
+
+        filter_cap = QLabel("ФИЛЬТРАЦИЯ")
+        filter_cap.setObjectName("SectionCap")
+        fcl.addWidget(filter_cap)
+
+        self.hallucination_filter_toggle = ToggleSwitch(
+            checked=self.config.get("filter_hallucinations", True)
+        )
+        self.hallucination_filter_toggle.toggled.connect(self._auto_save_recognition)
+        toggle_row(fcl, "Фильтр галлюцинаций",
+                   "Блокировать «Продолжение следует…» и похожие",
+                   self.hallucination_filter_toggle)
+
+        self.min_duration_seg = SegmentedControl(["0.3с", "0.5с", "1с", "Выкл"])
+        dur_map = {0.3: 0, 0.5: 1, 1.0: 2, 0.0: 3}
+        saved_dur = self.config.get("min_recording_duration", 0.5)
+        self.min_duration_seg.setCurrentIndex(dur_map.get(saved_dur, 1))
+        self.min_duration_seg.currentChanged.connect(self._auto_save_recognition)
+
+        dur_cell = QWidget()
+        dur_vl = QVBoxLayout(dur_cell)
+        dur_vl.setContentsMargins(0, 0, 0, 0)
+        dur_vl.setSpacing(6)
+        dur_lbl = QLabel("МИНИМАЛЬНАЯ ДЛИТЕЛЬНОСТЬ ЗАПИСИ")
+        dur_lbl.setObjectName("SectionCap")
+        dur_sub = QLabel("Короче — игнорировать как случайное нажатие")
+        dur_sub.setObjectName("DetailMeta")
+        dur_vl.addWidget(dur_lbl)
+        dur_vl.addWidget(dur_sub)
+        dur_vl.addWidget(self.min_duration_seg)
+        fcl.addWidget(dur_cell)
+
+        lay.addWidget(filter_card)
+        lay.addStretch()
+
+        outer.addStretch()
+        outer.addWidget(inner)
+        outer.addStretch()
+        self.stack.addWidget(page)
+
+    def _auto_save_recognition(self):
+        """Auto-save recognition settings."""
+        self.config["use_raw_whisper"] = self.raw_whisper_toggle.isChecked()
+        self.config["filter_hallucinations"] = self.hallucination_filter_toggle.isChecked()
+        dur_values = [0.3, 0.5, 1.0, 0.0]
+        self.config["min_recording_duration"] = dur_values[self.min_duration_seg.currentIndex()]
+        self.save_callback(self.config)
 
     def _build_logs_tab(self):
         page = QWidget()
@@ -844,6 +923,9 @@ class DashboardWindow(QWidget):
                     break
 
         self.startup_toggle.set_theme(theme)
+        self.raw_whisper_toggle.set_theme(theme)
+        self.hallucination_filter_toggle.set_theme(theme)
+        self.min_duration_seg.set_theme(theme)
         self.theme_seg.set_theme(theme)
         self.shape_seg.set_theme(theme)
         self.size_seg.set_theme(theme)
@@ -875,7 +957,7 @@ class DashboardWindow(QWidget):
         self.apply_theme(self.theme_name)
         if index == 0: self.update_statistics()
         elif index == 2: self.load_history()
-        elif index == 4: self.load_logs()
+        elif index == 5: self.load_logs()
 
     def load_logs(self):
         log_path = "echo.log"

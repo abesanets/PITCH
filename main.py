@@ -281,11 +281,11 @@ class VoiceAssistant:
         self.is_recording = False
 
         # Минимальная длительность записи — защита от случайных нажатий
-        MIN_RECORDING_DURATION = 0.5  # секунд
+        MIN_RECORDING_DURATION = self.config.get("min_recording_duration", 0.5)
         duration = time.time() - (self.recording_start_time or 0)
         self.recorder.stop_recording()  # всегда останавливаем поток
 
-        if duration < MIN_RECORDING_DURATION:
+        if duration < MIN_RECORDING_DURATION and MIN_RECORDING_DURATION > 0:
             print(f"[Запись] Слишком короткая запись ({duration:.2f}s < {MIN_RECORDING_DURATION}s), игнорируем.")
             self.signals.state_changed.emit("idle")
             return
@@ -308,7 +308,8 @@ class VoiceAssistant:
         client = self.get_groq_client()
         use_raw = self.config.get("use_raw_whisper", False)
         base_url = self.config.get("groq_base_url", "").strip()
-        result = process_audio_pipeline(filename, self.config["api_key"], text_model, client=client, use_raw_whisper=use_raw, base_url=base_url)
+        filter_hall = self.config.get("filter_hallucinations", True)
+        result = process_audio_pipeline(filename, self.config["api_key"], text_model, client=client, use_raw_whisper=use_raw, base_url=base_url, filter_hallucinations=filter_hall)
         if isinstance(result, dict):
             import history_manager
             history_manager.add_history_entry(

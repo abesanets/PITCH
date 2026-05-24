@@ -95,7 +95,7 @@ def process_text_with_fallback(client, messages, text_model):
             time.sleep(0.1)
     raise Exception(f"Все текстовые модели недоступны. Ошибка: {last_error}")
 
-def process_audio_pipeline(file_path, api_key, text_model="llama-3.3-70b-versatile", client=None, use_raw_whisper=False, base_url=""):
+def process_audio_pipeline(file_path, api_key, text_model="llama-3.3-70b-versatile", client=None, use_raw_whisper=False, base_url="", filter_hallucinations=True):
     """
     Transcribes audio and formats it using Groq.
     If use_raw_whisper is True, returns raw Whisper transcription without LLM processing.
@@ -127,7 +127,7 @@ def process_audio_pipeline(file_path, api_key, text_model="llama-3.3-70b-versati
             print(f"[Whisper] Пустая аудиозапись ({whisper_time:.2f}s)")
             return ""
 
-        if is_hallucination(raw_text):
+        if is_hallucination(raw_text) and filter_hallucinations:
             print(f"[Whisper] Галлюцинация отфильтрована ({whisper_time:.2f}s): «{raw_text.strip()}»")
             return ""
             
