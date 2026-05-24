@@ -3,9 +3,9 @@ from PyQt6.QtGui import QColor
 from .styles_data import ACCENT_PRESETS
 
 # Fixed UI accent — independent of the visualizer colour preset
-UI_PRIMARY  = "#3B82F6"   # blue-500
-UI_HOVER    = "#2563EB"   # blue-600
-UI_SELECTED = "#1E3A5F"   # deep navy tint for selected/active backgrounds
+UI_PRIMARY  = "#A0A0A0"   # muted gray
+UI_HOVER    = "#8A8A8A"   # slightly lighter gray
+UI_SELECTED = "#353535"   # dark muted tone for selected/active backgrounds
 
 
 def _lerp_color(c1, c2, t):
@@ -20,51 +20,51 @@ def _lerp_color(c1, c2, t):
 
 def get_stylesheet(theme, preset_key="mono"):
     """Generate stylesheet based on theme. preset_key is used only for
-    visualizer-related colours; all UI chrome uses the fixed blue palette."""
+    visualizer-related colours; all UI chrome uses fixed muted palette."""
 
     if theme == "light":
-        bg        = "#F0F2F5"
+        bg        = "#F5F5F5"
         sidebar   = "#FFFFFF"
         surface   = "#FFFFFF"
-        surface2  = "#F7F8FA"
-        text      = "#0D0D0D"
-        muted     = "#6B7280"
-        faint     = "#9CA3AF"
-        border    = "#E5E7EB"
-        nav_hover = "#F3F4F6"
-        selected  = "#EFF6FF"
+        surface2  = "#FAFAFA"
+        text      = "#1A1A1A"
+        muted     = "#6B6B6B"
+        faint     = "#9A9A9A"
+        border    = "#E0E0E0"
+        nav_hover = "#F0F0F0"
+        selected  = "#E8E8E8"
         console   = "#FAFAFA"
         input_bg  = "#FFFFFF"
-        primary   = "#2563EB"
-        hover     = "#1D4ED8"
-        seg_act_bg  = "rgba(37,99,235,0.12)"
-        seg_act_bdr = "rgba(37,99,235,0.40)"
-        seg_act_txt = "#1D4ED8"
+        primary   = "#2A2A2A"
+        hover     = "#404040"
+        seg_act_bg  = "rgba(42,42,42,0.12)"
+        seg_act_bdr = "rgba(42,42,42,0.30)"
+        seg_act_txt = "#1A1A1A"
     else:
-        bg        = "#0F1117"
-        sidebar   = "#16181F"
-        surface   = "#1C1F28"
-        surface2  = "#22252F"
-        text      = "#F1F3F7"
-        muted     = "#8B92A5"
-        faint     = "#555D6E"
-        border    = "#2A2D38"
-        nav_hover = "#1F2330"
-        selected  = "#1E3A5F"
-        console   = "#13151C"
-        input_bg  = "#13151C"
-        primary   = "#3B82F6"
-        hover     = "#2563EB"
-        seg_act_bg  = "rgba(59,130,246,0.18)"
-        seg_act_bdr = "rgba(59,130,246,0.50)"
-        seg_act_txt = "#93C5FD"
+        bg        = "#1E1E1E"
+        sidebar   = "#252525"
+        surface   = "#2A2A2A"
+        surface2  = "#2F2F2F"
+        text      = "#E5E5E5"
+        muted     = "#8A8A8A"
+        faint     = "#5A5A5A"
+        border    = "#3A3A3A"
+        nav_hover = "#2D2D2D"
+        selected  = "#353535"
+        console   = "#252525"
+        input_bg  = "#252525"
+        primary   = "#A0A0A0"
+        hover     = "#8A8A8A"
+        seg_act_bg  = "rgba(160,160,160,0.15)"
+        seg_act_bdr = "rgba(160,160,160,0.40)"
+        seg_act_txt = "#C0C0C0"
 
     return f"""
         QWidget#DashboardWindow {{
             background-color: {bg};
         }}
         QWidget {{
-            font-family: "Segoe UI", "Arial", sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Helvetica Neue", sans-serif;
             font-size: 13px;
             color: {text};
         }}
@@ -274,6 +274,11 @@ def get_stylesheet(theme, preset_key="mono"):
         }}
         QListWidget::item:hover {{ background: {nav_hover}; color: {text}; }}
         QListWidget::item:selected {{ background: {selected}; color: {text}; }}
+
+        /* History cards container */
+        QWidget#HistoryCardsWidget {{
+            background: {bg};
+        }}
 
         /* Hide horizontal scrollbar */
         QScrollBar:horizontal {{

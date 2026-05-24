@@ -6,7 +6,7 @@ from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel,
                              QStackedWidget, QPlainTextEdit, QFrame, QApplication,
                              QGridLayout,
                              QSizePolicy, QScrollArea, QSlider, QColorDialog,
-                             QDialog)
+                             QDialog, QMessageBox)
 from PyQt6.QtCore import (Qt, QTimer, QRectF, QPropertyAnimation, QEasingCurve,
                            pyqtProperty, pyqtSignal, QPointF, QPoint)
 from PyQt6.QtGui import (QPainter, QPen, QBrush, QFont, QIcon, QPixmap,
@@ -42,23 +42,20 @@ class TitleBar(QFrame):
     def __init__(self, parent_window):
         super().__init__()
         self.setObjectName("TitleBar")
-        self.setFixedHeight(36)
+        self.setFixedHeight(28)
         self._win = parent_window
 
         lay = QHBoxLayout(self)
-        lay.setContentsMargins(12, 0, 0, 0)
+        lay.setContentsMargins(8, 0, 0, 0)
         lay.setSpacing(0)
 
-        # Title label
-        self._title = QLabel("Echo")
-        self._title.setObjectName("TitleBarLabel")
-        lay.addWidget(self._title)
+        # No title label - logo is in sidebar
         lay.addStretch()
 
         # Minimize button
         self._btn_min = QPushButton("─")
         self._btn_min.setObjectName("TitleBtn")
-        self._btn_min.setFixedSize(46, 36)
+        self._btn_min.setFixedSize(36, 28)
         self._btn_min.setCursor(Qt.CursorShape.ArrowCursor)
         self._btn_min.clicked.connect(parent_window.showMinimized)
         lay.addWidget(self._btn_min)
@@ -66,7 +63,7 @@ class TitleBar(QFrame):
         # Close button
         self._btn_close = QPushButton("✕")
         self._btn_close.setObjectName("TitleBtnClose")
-        self._btn_close.setFixedSize(46, 36)
+        self._btn_close.setFixedSize(36, 28)
         self._btn_close.setCursor(Qt.CursorShape.ArrowCursor)
         self._btn_close.clicked.connect(parent_window.close)
         lay.addWidget(self._btn_close)
@@ -88,6 +85,8 @@ class TitleBar(QFrame):
 
 class DashboardWindow(QWidget):
     """Main dashboard window with tabs"""
+    restart_requested = pyqtSignal()  # Signal to request application restart
+    
     def __init__(self, config, save_callback):
         super().__init__()
         self.setObjectName("DashboardWindow")
@@ -102,7 +101,7 @@ class DashboardWindow(QWidget):
         self.update_statistics()
 
     def init_ui(self):
-        self.setWindowTitle("Echo")
+        self.setWindowTitle("PITCH")
         self.setFixedSize(700, 580)
         self.setWindowFlags(Qt.WindowType.FramelessWindowHint)
 
@@ -135,7 +134,8 @@ class DashboardWindow(QWidget):
         self._build_settings_tab()
         self._build_logs_tab()
 
-        icon_path = os.path.join(os.path.dirname(__file__), "..", "icon.png")
+        icon_name = "p.jpeg"
+        icon_path = os.path.join(os.path.dirname(__file__), "..", "assets", icon_name)
         if os.path.exists(icon_path):
             self.setWindowIcon(QIcon(icon_path))
 
@@ -151,27 +151,21 @@ class DashboardWindow(QWidget):
         lay = QVBoxLayout(sidebar)
         lay.setContentsMargins(14, 20, 14, 16)
         lay.setSpacing(2)
+        self.sidebar_layout = lay  # Store reference for icon updates
 
-        name_lbl = QLabel("Echo")
-        name_lbl.setObjectName("AppName")
-
-        # Icon next to the title
-        icon_path = os.path.join(os.path.dirname(__file__), "..", "icon_small.png")
+        # Logo only - no text label
+        icon_name = "white_pitch_on_black.jpeg" if self.theme_name == "dark" else "black_pitch_on_white.jpeg"
+        icon_path = os.path.join(os.path.dirname(__file__), "..", "assets", icon_name)
         if os.path.exists(icon_path):
-            title_row = QHBoxLayout()
-            title_row.setSpacing(8)
-            icon_lbl = QLabel()
-            icon_lbl.setObjectName("SidebarIcon")
-            icon_pix = QPixmap(icon_path).scaled(24, 24,
+            logo_lbl = QLabel()
+            logo_lbl.setObjectName("SidebarLogo")
+            logo_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            # Scale to sidebar width (200px - margins)
+            logo_pix = QPixmap(icon_path).scaled(172, 172,
                 Qt.AspectRatioMode.KeepAspectRatio,
                 Qt.TransformationMode.SmoothTransformation)
-            icon_lbl.setPixmap(icon_pix)
-            title_row.addWidget(icon_lbl)
-            title_row.addWidget(name_lbl)
-            title_row.addStretch()
-            lay.addLayout(title_row)
-        else:
-            lay.addWidget(name_lbl)
+            logo_lbl.setPixmap(logo_pix)
+            lay.addWidget(logo_lbl)
         lay.addSpacing(16)
 
         self.nav_buttons = []
@@ -195,7 +189,7 @@ class DashboardWindow(QWidget):
         self.status_dot_lbl = QLabel("● Готов")
         self.status_dot_lbl.setObjectName("StatusDot")
         self.status_dot_lbl.setStyleSheet("color: #10B981; font-size: 11px;")
-        ver_lbl = QLabel("v1.1")
+        ver_lbl = QLabel("v1.2")
         ver_lbl.setObjectName("VersionLbl")
         lay.addWidget(self.status_dot_lbl)
         lay.addWidget(ver_lbl)
@@ -502,8 +496,32 @@ class DashboardWindow(QWidget):
         self.config["theme"]      = "dark" if self.theme_seg.currentIndex() == 0 else "light"
         self.config["run_on_startup"] = self.startup_toggle.isChecked()
         self.config["use_raw_whisper"] = self.raw_whisper_toggle.isChecked()
-        self.config["groq_base_url"] = self.base_url_input.text().strip()
+        # Don't save base_url here - it's handled by _on_base_url_changed
         self.save_callback(self.config)
+
+    def _on_base_url_changed(self):
+        """Handle Base URL change with restart notification"""
+        new_url = self.base_url_input.text().strip()
+        old_url = self.config.get("groq_base_url", "")
+        
+        # Save the new URL
+        self.config["groq_base_url"] = new_url
+        self.save_callback(self.config)
+        
+        # Show restart notification if URL actually changed
+        if new_url != old_url:
+            reply = QMessageBox.question(
+                self,
+                "Требуется перезапуск",
+                "Изменение URL сервера требует перезагрузки приложения для вступления в силу.\n\nПерезапустить сейчас?",
+                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+                QMessageBox.StandardButton.Yes
+            )
+            
+            if reply == QMessageBox.StandardButton.Yes:
+                # Signal the main app to restart
+                if hasattr(self, 'restart_requested'):
+                    self.restart_requested.emit()
 
     def _build_history_tab(self):
         page = QWidget()
@@ -550,6 +568,7 @@ class DashboardWindow(QWidget):
         self.history_scroll.setFrameShape(QFrame.Shape.NoFrame)
 
         self.history_cards_widget = QWidget()
+        self.history_cards_widget.setObjectName("HistoryCardsWidget")
         self.history_cards_layout = QVBoxLayout(self.history_cards_widget)
         self.history_cards_layout.setContentsMargins(0, 0, 0, 0)
         self.history_cards_layout.setSpacing(6)
@@ -677,7 +696,7 @@ class DashboardWindow(QWidget):
         self.base_url_input = QLineEdit()
         self.base_url_input.setText(self.config.get("groq_base_url", ""))
         self.base_url_input.setPlaceholderText("https://your-worker.your-subdomain.workers.dev (without /openai/v1)")
-        self.base_url_input.editingFinished.connect(self._auto_save_settings)
+        self.base_url_input.editingFinished.connect(self._on_base_url_changed)
 
         acl.addWidget(self.base_url_input)
         lay.addWidget(api_card)
@@ -726,7 +745,7 @@ class DashboardWindow(QWidget):
         toggle_lbl_block.setSpacing(2)
         toggle_title = QLabel("Автозапуск")
         toggle_title.setObjectName("FieldLbl")
-        toggle_sub = QLabel("Запускать Echo при входе в систему")
+        toggle_sub = QLabel("Запускать PITCH при входе в систему")
         toggle_sub.setObjectName("DetailMeta")
         toggle_lbl_block.addWidget(toggle_title)
         toggle_lbl_block.addWidget(toggle_sub)
@@ -806,6 +825,23 @@ class DashboardWindow(QWidget):
         if preset is None:
             preset = self.config.get("visualizer_color_preset", "mono")
         self.setStyleSheet(get_stylesheet(theme, preset))
+
+        # Update icons based on theme
+        icon_name = "p.jpeg"
+        icon_path = os.path.join(os.path.dirname(__file__), "..", "assets", icon_name)
+        if os.path.exists(icon_path):
+            self.setWindowIcon(QIcon(icon_path))
+            # Update sidebar logo
+            sidebar_icon_name = "white_pitch_on_black.jpeg" if theme == "dark" else "black_pitch_on_white.jpeg"
+            sidebar_icon_path = os.path.join(os.path.dirname(__file__), "..", "assets", sidebar_icon_name)
+            for i in reversed(range(self.sidebar_layout.count())):
+                widget = self.sidebar_layout.itemAt(i).widget()
+                if widget and widget.objectName() == "SidebarLogo":
+                    logo_pix = QPixmap(sidebar_icon_path).scaled(172, 172,
+                        Qt.AspectRatioMode.KeepAspectRatio,
+                        Qt.TransformationMode.SmoothTransformation)
+                    widget.setPixmap(logo_pix)
+                    break
 
         self.startup_toggle.set_theme(theme)
         self.theme_seg.set_theme(theme)

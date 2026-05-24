@@ -176,8 +176,8 @@ class OverlayWindow(QWidget):
         self.size_key = "medium"
         self.bg_mode = "solid"  # "solid", "none"
         self.custom_colors = {
-            "dark": [QColor(244, 244, 245, 255), QColor(161, 161, 170, 160), QColor(113, 113, 122, 100)],
-            "light": [QColor(24, 24, 27, 255), QColor(113, 113, 122, 140), QColor(161, 161, 170, 100)]
+            "dark": [QColor(229, 229, 229, 255), QColor(138, 138, 138, 160), QColor(90, 90, 90, 100)],
+            "light": [QColor(26, 26, 26, 255), QColor(107, 107, 107, 140), QColor(154, 154, 154, 100)]
         }
 
         self.setWindowFlags(
@@ -283,10 +283,10 @@ class OverlayWindow(QWidget):
             preset = VISUALIZER_PRESETS.get(self.color_preset, VISUALIZER_PRESETS["mono"])
 
         if self.theme == "light":
-            bg_color   = QColor(250, 250, 250, 185)
+            bg_color   = QColor(240, 240, 240, 185)  # Soft light background
             glow_color = QColor(255, 255, 255, 70)
         else:
-            bg_color   = QColor(10, 14, 20, 172)
+            bg_color   = QColor(34, 34, 34, 172)     # Soft dark background
             glow_color = QColor(255, 255, 255, 24)
 
         # Draw background based on mode

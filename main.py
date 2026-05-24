@@ -48,6 +48,7 @@ class WorkerSignals(QObject):
     log_message = pyqtSignal(str)
 
 class VoiceAssistant:
+    """Main application class for PITCH voice assistant"""
     def __init__(self):
         self.app = QApplication(sys.argv)
         self.app.setQuitOnLastWindowClosed(False)
@@ -55,7 +56,7 @@ class VoiceAssistant:
         self.signals = WorkerSignals()
         
         # Redirect stdout/stderr to log file and UI log signal
-        log_file_path = os.path.join(os.path.dirname(__file__), "echo.log")
+        log_file_path = os.path.join(os.path.dirname(__file__), "pitch.log")
         self.signals.log_message.connect(self.on_log_message)
         self.redirector = LogRedirector(self.signals.log_message, log_file_path)
         sys.stdout = self.redirector
@@ -102,7 +103,10 @@ class VoiceAssistant:
     def setup_tray(self):
         self.tray = QSystemTrayIcon()
         
-        icon_path = os.path.join(os.path.dirname(__file__), 'icon.png')
+        # Use theme-appropriate icon for tray
+        theme = self.config.get("theme", "dark")
+        icon_name = "p.jpeg"
+        icon_path = os.path.join(os.path.dirname(__file__), 'assets', icon_name)
         if os.path.exists(icon_path):
             self.tray.setIcon(QIcon(icon_path))
         else:
@@ -115,7 +119,7 @@ class VoiceAssistant:
             self.tray.setIcon(QIcon(pixmap))
             
         self.tray.setVisible(True)
-        self.tray.setToolTip("Echo (Hold Ctrl+Win to record)")
+        self.tray.setToolTip("PITCH (Hold Ctrl+Win to record)")
         self.tray.activated.connect(self.on_tray_activated)
         
         menu = QMenu()
@@ -138,6 +142,8 @@ class VoiceAssistant:
         if self.dashboard is None:
             self.dashboard = DashboardWindow(self.config, self.on_settings_saved)
             self.dashboard.set_system_state(self.overlay.state)
+            # Connect restart signal
+            self.dashboard.restart_requested.connect(self.restart_app)
         self.dashboard.show()
         self.dashboard.raise_()
         self.dashboard.activateWindow()
@@ -153,6 +159,14 @@ class VoiceAssistant:
         self.update_startup_registry(self.config.get("run_on_startup", False))
         self.overlay.set_theme(self.config.get("theme", "dark"))
         self.overlay.apply_config(self.config)
+        
+        # Update tray icon when theme changes
+        theme = self.config.get("theme", "dark")
+        icon_name = "p.jpeg"
+        icon_path = os.path.join(os.path.dirname(__file__), 'assets', icon_name)
+        if os.path.exists(icon_path):
+            self.tray.setIcon(QIcon(icon_path))
+        
         self.start_background_warmup(force=True)
 
     def update_startup_registry(self, enabled):
@@ -160,7 +174,7 @@ class VoiceAssistant:
             return
         import winreg
         key_path = r"Software\Microsoft\Windows\CurrentVersion\Run"
-        app_name = "EchoVoiceAssistant"
+        app_name = "PITCHVoiceAssistant"
         
         # Determine executable path
         if getattr(sys, 'frozen', False):
@@ -357,9 +371,38 @@ class VoiceAssistant:
         self.tray.hide()
         self.app.quit()
 
+    def restart_app(self):
+        """Restart the application with the same arguments"""
+        print("[Перезапуск] Перезапуск приложения...")
+        
+        # Hide dashboard and tray
+        if self.dashboard:
+            self.dashboard.close()
+        self.tray.hide()
+        
+        # Get the executable path
+        import subprocess
+        try:
+            if getattr(sys, 'frozen', False):
+                # Frozen (compiled) mode - just run the exe
+                exe = sys.executable
+                subprocess.Popen([exe])
+            else:
+                # Script mode - run python with main.py
+                script_path = os.path.abspath(sys.argv[0])
+                subprocess.Popen([sys.executable, script_path])
+            print("[Перезапуск] Новая instance запущена")
+        except Exception as e:
+            print(f"[Перезапуск] Ошибка запуска: {e}")
+        
+        # Quit current instance
+        self.monitor_running = False
+        self.recorder.close()
+        self.app.quit()
+
     def run(self):
         print("\n" + "="*50)
-        print("🎙️  Echo: Minimalist Voice Assistant запущен!")
+        print("🎙️  PITCH: Minimalist Voice Assistant запущен!")
         print("👉  Удерживайте Ctrl+Win для диктовки.")
         print("⚙️   Дважды кликните по иконке в трее, чтобы открыть Dashboard.")
         print("="*50 + "\n")
