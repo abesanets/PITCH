@@ -21,6 +21,8 @@ class GroqWorker(QThread):
             base_url = self.config.get("groq_base_url", "").strip()
             filter_hall = self.config.get("filter_hallucinations", True)
             api_key = self.config.get("api_key", "")
+            formatting_style = self.config.get("formatting_style", "default")
+            custom_formatting_style = self.config.get("custom_formatting_style", "")
             
             result = process_audio_pipeline(
                 self.file_path,
@@ -29,7 +31,9 @@ class GroqWorker(QThread):
                 client=self.groq_client,
                 use_raw_whisper=use_raw,
                 base_url=base_url,
-                filter_hallucinations=filter_hall
+                filter_hallucinations=filter_hall,
+                formatting_style=formatting_style,
+                custom_formatting_style=custom_formatting_style
             )
             
             if isinstance(result, dict):

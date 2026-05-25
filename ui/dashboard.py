@@ -17,6 +17,22 @@ from .styles import get_stylesheet
 from .widgets import ToggleSwitch, SegmentedControl, ColorPresetSelector, ElidedLabel
 from .visualizer import PreviewWidget, OverlayWindow
 
+STYLE_DETAILS = {
+    "default": {
+        "desc": "Исправляет опечатки, пунктуацию и расставляет абзацы. Превращает технический сленг в английские термины.",
+        "example": "Пример: «привет запиши это в джэсон» → <b>«Привет, запиши это в JSON.»</b>"
+    },
+    "chat": {
+        "desc": "Пишет весь текст строчными буквами без разделения на предложения (все мысли через запятую) и без точек. Удаляет слова-паразиты.",
+        "example": "Пример: «ну привет короче как дела завтра пойдём гулять» → <b>«привет, как дела, завтра пойдем гулять»</b>"
+    },
+    "custom": {
+        "desc": "Применяет вашу собственную текстовую инструкцию для форматирования распознанного текста.",
+        "example": "Пример: [Действует указанная ниже пользовательская инструкция]"
+    }
+}
+
+
 
 def _apply_dwm_rounded_corners(win_id):
     """Apply native rounded corners via Windows DWM API (Windows 11+)."""
@@ -740,8 +756,8 @@ class DashboardWindow(QWidget):
         self.startup_toggle = ToggleSwitch(checked=self.config.get("run_on_startup", False))
         self.startup_toggle.toggled.connect(self._auto_save_settings)
 
-        toggle_row = QHBoxLayout()
-        toggle_row.setSpacing(12)
+        toggle_row_layout = QHBoxLayout()
+        toggle_row_layout.setSpacing(12)
         toggle_lbl_block = QVBoxLayout()
         toggle_lbl_block.setSpacing(2)
         toggle_title = QLabel("Автозапуск")
@@ -750,9 +766,9 @@ class DashboardWindow(QWidget):
         toggle_sub.setObjectName("DetailMeta")
         toggle_lbl_block.addWidget(toggle_title)
         toggle_lbl_block.addWidget(toggle_sub)
-        toggle_row.addLayout(toggle_lbl_block, 1)
-        toggle_row.addWidget(self.startup_toggle)
-        scl.addLayout(toggle_row)
+        toggle_row_layout.addLayout(toggle_lbl_block, 1)
+        toggle_row_layout.addWidget(self.startup_toggle)
+        scl.addLayout(toggle_row_layout)
         lay.addWidget(sys_card)
 
         lay.addStretch()
@@ -767,10 +783,20 @@ class DashboardWindow(QWidget):
         outer = QHBoxLayout(page)
         outer.setContentsMargins(0, 0, 0, 0)
 
-        inner = QWidget()
-        inner.setFixedWidth(400)
-        lay = QVBoxLayout(inner)
-        lay.setContentsMargins(0, 20, 0, 20)
+        # Create QScrollArea with hidden scrollbars
+        self.recognition_scroll = QScrollArea()
+        self.recognition_scroll.setWidgetResizable(True)
+        self.recognition_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.recognition_scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.recognition_scroll.setFrameShape(QFrame.Shape.NoFrame)
+        self.recognition_scroll.setFixedWidth(420)
+        self.recognition_scroll.setStyleSheet("QScrollArea { background: transparent; border: none; }")
+
+        self.recognition_inner = QWidget()
+        self.recognition_inner.setObjectName("RecognitionInnerWidget")
+        self.recognition_inner.setStyleSheet("QWidget#RecognitionInnerWidget { background: transparent; }")
+        lay = QVBoxLayout(self.recognition_inner)
+        lay.setContentsMargins(10, 20, 10, 20)
         lay.setSpacing(10)
 
         title = QLabel("Распознавание")
@@ -850,12 +876,112 @@ class DashboardWindow(QWidget):
         fcl.addWidget(dur_cell)
 
         lay.addWidget(filter_card)
+
+        # ── Стиль форматирования card ──
+        style_card = QFrame()
+        style_card.setObjectName("Card")
+        scl = QVBoxLayout(style_card)
+        scl.setContentsMargins(16, 14, 16, 14)
+        scl.setSpacing(10)
+        
+        style_cap = QLabel("СТИЛЬ ФОРМАТИРОВАНИЯ")
+        style_cap.setObjectName("SectionCap")
+        scl.addWidget(style_cap)
+        
+        # Grid of buttons for selecting style
+        buttons_widget = QWidget()
+        buttons_lay = QGridLayout(buttons_widget)
+        buttons_lay.setContentsMargins(0, 0, 0, 0)
+        buttons_lay.setSpacing(6)
+        
+        self.style_buttons = {}
+        styles_info = [
+            ("Редактор", "default", 0, 0),
+            ("Чат", "chat", 0, 1),
+            ("Кастом", "custom", 0, 2),
+        ]
+        
+        for name, key, r, c in styles_info:
+            btn = QPushButton(name)
+            btn.setCursor(Qt.CursorShape.PointingHandCursor)
+            btn.setFixedHeight(30)
+            btn.clicked.connect(lambda _, k=key: self._select_style(k))
+            buttons_lay.addWidget(btn, r, c)
+            self.style_buttons[key] = btn
+            
+        scl.addWidget(buttons_widget)
+        
+        # Style details info card (SubCard)
+        self.style_info_card = QFrame()
+        self.style_info_card.setObjectName("SubCard")
+        sil = QVBoxLayout(self.style_info_card)
+        sil.setContentsMargins(12, 10, 12, 10)
+        sil.setSpacing(6)
+        
+        self.style_desc_lbl = QLabel()
+        self.style_desc_lbl.setWordWrap(True)
+        self.style_desc_lbl.setStyleSheet("font-size: 11px; color: #8A8A8A;")
+        
+        self.style_example_lbl = QLabel()
+        self.style_example_lbl.setWordWrap(True)
+        self.style_example_lbl.setStyleSheet("font-size: 12px; font-weight: 500;")
+        
+        sil.addWidget(self.style_desc_lbl)
+        sil.addWidget(self.style_example_lbl)
+        scl.addWidget(self.style_info_card)
+        
+        # Custom instructions field
+        self.custom_style_label = QLabel("ИНСТРУКЦИЯ ДЛЯ КАСТОМНОГО СТИЛЯ:")
+        self.custom_style_label.setObjectName("SectionCap")
+        scl.addWidget(self.custom_style_label)
+        
+        self.custom_style_edit = QPlainTextEdit()
+        self.custom_style_edit.setPlaceholderText("Например: Переведи текст на английский язык или Перепиши текст в деловом стиле.")
+        self.custom_style_edit.setFixedHeight(120)
+        self.custom_style_edit.setPlainText(self.config.get("custom_formatting_style", ""))
+        self.custom_style_edit.textChanged.connect(self._auto_save_recognition)
+        scl.addWidget(self.custom_style_edit)
+        
+        saved_style = self.config.get("formatting_style", "default")
+        self._update_style_ui(saved_style)
+        
+        lay.addWidget(style_card)
         lay.addStretch()
 
+        self.recognition_scroll.setWidget(self.recognition_inner)
+
         outer.addStretch()
-        outer.addWidget(inner)
+        outer.addWidget(self.recognition_scroll)
         outer.addStretch()
         self.stack.addWidget(page)
+
+    def _select_style(self, key):
+        self.config["formatting_style"] = key
+        self._update_style_ui(key)
+        self._auto_save_recognition()
+
+    def _update_style_ui(self, key):
+        is_dark = self.theme_name == "dark"
+        if is_dark:
+            active_style = "background: rgba(160, 160, 160, 0.15); border: 1px solid rgba(160, 160, 160, 0.40); color: #C0C0C0; font-weight: 700; border-radius: 6px;"
+            idle_style = "background: #2A2A2A; border: 1px solid #3A3A3A; color: #8A8A8A; font-weight: 500; border-radius: 6px;"
+        else:
+            active_style = "background: rgba(42, 42, 42, 0.12); border: 1px solid rgba(42, 42, 42, 0.30); color: #1A1A1A; font-weight: 700; border-radius: 6px;"
+            idle_style = "background: #FFFFFF; border: 1px solid #E0E0E0; color: #6B6B6B; font-weight: 500; border-radius: 6px;"
+            
+        for k, btn in self.style_buttons.items():
+            if k == key:
+                btn.setStyleSheet(active_style)
+            else:
+                btn.setStyleSheet(idle_style)
+                
+        info = STYLE_DETAILS.get(key, STYLE_DETAILS["default"])
+        self.style_desc_lbl.setText(info["desc"])
+        self.style_example_lbl.setText(info["example"])
+        
+        is_custom = key == "custom"
+        self.custom_style_label.setVisible(is_custom)
+        self.custom_style_edit.setVisible(is_custom)
 
     def _auto_save_recognition(self):
         """Auto-save recognition settings."""
@@ -863,6 +989,7 @@ class DashboardWindow(QWidget):
         self.config["filter_hallucinations"] = self.hallucination_filter_toggle.isChecked()
         dur_values = [0.3, 0.5, 1.0, 0.0]
         self.config["min_recording_duration"] = dur_values[self.min_duration_seg.currentIndex()]
+        self.config["custom_formatting_style"] = self.custom_style_edit.toPlainText().strip()
         self.save_callback(self.config)
 
     def _build_logs_tab(self):
@@ -936,6 +1063,9 @@ class DashboardWindow(QWidget):
         for btn in self.nav_buttons:
             btn.style().unpolish(btn)
             btn.style().polish(btn)
+
+        if hasattr(self, 'style_buttons'):
+            self._update_style_ui(self.config.get("formatting_style", "default"))
 
     def set_system_state(self, state):
         colors = {

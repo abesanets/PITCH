@@ -544,7 +544,6 @@ class ElidedLabel(QWidget):
     def paintEvent(self, e):
         from PyQt6.QtGui import QPalette
         p = QPainter(self)
-        p.setFont(self.font())
         # Use the foreground color set via stylesheet
         color = self.palette().color(QPalette.ColorRole.WindowText)
         p.setPen(color)
