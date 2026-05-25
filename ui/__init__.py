@@ -4,6 +4,7 @@ from .styles_data import ACCENT_PRESETS, VISUALIZER_PRESETS, VISUALIZER_SIZES
 from .widgets import ToggleSwitch, SegmentedControl, ColorPresetSelector, CustomColorDialog
 from .visualizer import PreviewWidget, OverlayWindow
 from .dashboard import DashboardWindow
+from .assistant import VoiceAssistant
 
 __all__ = [
     'get_stylesheet',
@@ -18,4 +19,5 @@ __all__ = [
     'PreviewWidget',
     'OverlayWindow',
     'DashboardWindow',
+    'VoiceAssistant',
 ]
