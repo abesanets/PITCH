@@ -6,7 +6,7 @@ from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel,
                              QStackedWidget, QPlainTextEdit, QFrame, QApplication,
                              QGridLayout,
                              QSizePolicy, QScrollArea, QSlider, QColorDialog,
-                             QDialog, QMessageBox)
+                             QDialog, QMessageBox, QCheckBox)
 from PyQt6.QtCore import (Qt, QTimer, QRectF, QPropertyAnimation, QEasingCurve,
                            pyqtProperty, pyqtSignal, QPointF, QPoint)
 from PyQt6.QtGui import (QPainter, QPen, QBrush, QFont, QIcon, QPixmap,
@@ -510,15 +510,40 @@ class DashboardWindow(QWidget):
         self.config["visualizer_sensitivity"] = self.sens_slider.value() / 5.0
         self.save_callback(self.config)
 
+    def _update_hotkey_badge(self):
+        h1 = self.config.get("hotkey_1", "ctrl+windows").upper()
+        if self.config.get("hotkey_2_enabled", False):
+            h2 = self.config.get("hotkey_2", "shift+windows").upper()
+            self.hotkey_badge.setText(f"{h1} / {h2}")
+        else:
+            self.hotkey_badge.setText(h1)
+
+    def _toggle_hotkey_2_widgets(self):
+        if hasattr(self, "h2_widget") and self.h2_widget:
+            self.h2_widget.setVisible(self.hotkey_2_enabled_cb.isChecked())
+
     def _auto_save_settings(self):
         """Auto-save settings without button click"""
         self.config["api_key"]    = self.api_input.text().strip()
-        self.config["hotkey"]     = self.hotkey_combo.currentText()
+        
+        # Save new hotkeys configuration
+        self.config["hotkey_1"]   = self.hotkey_1_combo.currentText()
+        # Maintain backward compatibility key for other modules
+        self.config["hotkey"]     = self.hotkey_1_combo.currentText()
+        
+        mode_map = {"Редактор": "default", "Чат": "chat", "Английский": "translate_en", "Кастом": "custom"}
+        self.config["mode_1"]     = mode_map.get(self.mode_1_combo.currentText(), "default")
+        
+        self.config["hotkey_2_enabled"] = self.hotkey_2_enabled_cb.isChecked()
+        self.config["hotkey_2"]   = self.hotkey_2_combo.currentText()
+        self.config["mode_2"]     = mode_map.get(self.mode_2_combo.currentText(), "translate_en")
+        
         self.config["text_model"] = self.model_combo.currentText()
         self.config["theme"]      = "dark" if self.theme_seg.currentIndex() == 0 else "light"
         self.config["run_on_startup"] = self.startup_toggle.isChecked()
         # Don't save base_url here - it's handled by _on_base_url_changed
         self.save_callback(self.config)
+        self._update_hotkey_badge()
 
     def _on_base_url_changed(self):
         """Handle Base URL change with restart notification"""
@@ -729,10 +754,84 @@ class DashboardWindow(QWidget):
         icl.setContentsMargins(16, 14, 16, 14)
         icl.setSpacing(14)
 
-        self.hotkey_combo = QComboBox()
-        self.hotkey_combo.addItems(["ctrl+windows", "left alt+space", "f8"])
-        self.hotkey_combo.setCurrentText(self.config.get("hotkey", "ctrl+windows"))
-        self.hotkey_combo.currentTextChanged.connect(self._auto_save_settings)
+        # Hotkey 1
+        h1_layout = QHBoxLayout()
+        h1_layout.setSpacing(10)
+        
+        self.hotkey_1_combo = QComboBox()
+        self.hotkey_1_combo.addItems(["ctrl+windows", "shift+windows", "ctrl+shift+windows", "left alt+space", "f8"])
+        self.hotkey_1_combo.setCurrentText(self.config.get("hotkey_1", "ctrl+windows"))
+        self.hotkey_1_combo.currentTextChanged.connect(self._auto_save_settings)
+        
+        self.mode_1_combo = QComboBox()
+        self.mode_1_combo.addItems(["Редактор", "Чат", "Английский", "Кастом"])
+        mode_map = {"default": "Редактор", "chat": "Чат", "translate_en": "Английский", "custom": "Кастом"}
+        current_mode_1 = self.config.get("mode_1", "default")
+        self.mode_1_combo.setCurrentText(mode_map.get(current_mode_1, "Редактор"))
+        self.mode_1_combo.currentTextChanged.connect(self._auto_save_settings)
+        
+        h1_layout.addWidget(setting_cell("СОЧЕТАНИЕ КЛАВИШ 1", self.hotkey_1_combo), 2)
+        h1_layout.addWidget(setting_cell("РЕЖИМ 1", self.mode_1_combo), 1)
+        icl.addLayout(h1_layout)
+        
+        # Hotkey 2 Checkbox
+        h2_enable_layout = QHBoxLayout()
+        h2_enable_layout.setContentsMargins(0, 0, 0, 0)
+        self.hotkey_2_enabled_cb = QCheckBox("Использовать второе сочетание клавиш")
+        self.hotkey_2_enabled_cb.setStyleSheet("""
+            QCheckBox {
+                color: #94A3B8;
+                font-size: 12px;
+                font-weight: 500;
+                spacing: 8px;
+            }
+            QCheckBox:hover {
+                color: #F8FAFC;
+            }
+            QCheckBox::indicator {
+                width: 16px;
+                height: 16px;
+                border-radius: 4px;
+                border: 1px solid #334155;
+                background-color: #1E293B;
+            }
+            QCheckBox::indicator:checked {
+                background-color: #10B981;
+                border-color: #10B981;
+            }
+            QCheckBox::indicator:unchecked:hover {
+                border-color: #475569;
+            }
+        """)
+        self.hotkey_2_enabled_cb.setChecked(self.config.get("hotkey_2_enabled", False))
+        self.hotkey_2_enabled_cb.stateChanged.connect(self._auto_save_settings)
+        self.hotkey_2_enabled_cb.stateChanged.connect(self._toggle_hotkey_2_widgets)
+        h2_enable_layout.addWidget(self.hotkey_2_enabled_cb)
+        icl.addLayout(h2_enable_layout)
+        
+        # Hotkey 2 Panel
+        self.h2_widget = QWidget()
+        h2_layout = QHBoxLayout(self.h2_widget)
+        h2_layout.setContentsMargins(0, 0, 0, 0)
+        h2_layout.setSpacing(10)
+        
+        self.hotkey_2_combo = QComboBox()
+        self.hotkey_2_combo.addItems(["shift+windows", "ctrl+windows", "ctrl+shift+windows", "left alt+space", "f8"])
+        self.hotkey_2_combo.setCurrentText(self.config.get("hotkey_2", "shift+windows"))
+        self.hotkey_2_combo.currentTextChanged.connect(self._auto_save_settings)
+        
+        self.mode_2_combo = QComboBox()
+        self.mode_2_combo.addItems(["Редактор", "Чат", "Английский", "Кастом"])
+        current_mode_2 = self.config.get("mode_2", "translate_en")
+        self.mode_2_combo.setCurrentText(mode_map.get(current_mode_2, "Английский"))
+        self.mode_2_combo.currentTextChanged.connect(self._auto_save_settings)
+        
+        h2_layout.addWidget(setting_cell("СОЧЕТАНИЕ КЛАВИШ 2", self.hotkey_2_combo), 2)
+        h2_layout.addWidget(setting_cell("РЕЖИМ 2", self.mode_2_combo), 1)
+        icl.addWidget(self.h2_widget)
+        
+        # Initial visibility toggle
+        self.h2_widget.setVisible(self.hotkey_2_enabled_cb.isChecked())
 
         self.model_combo = QComboBox()
         self.model_combo.addItems([
@@ -746,7 +845,6 @@ class DashboardWindow(QWidget):
         self.model_combo.setCurrentText(self.config.get("text_model", "llama-3.3-70b-versatile"))
         self.model_combo.currentTextChanged.connect(self._auto_save_settings)
 
-        icl.addWidget(setting_cell("ГОРЯЧАЯ КЛАВИША", self.hotkey_combo))
         icl.addWidget(setting_cell("ТЕКСТОВАЯ МОДЕЛЬ", self.model_combo))
         lay.addWidget(input_card)
 
@@ -1217,7 +1315,7 @@ class DashboardWindow(QWidget):
         self.val_chars.setText(str(stats["total_chars"]))
 
         # Update hotkey badge
-        self.hotkey_badge.setText(self.config.get("hotkey", "ctrl+windows").upper())
+        self._update_hotkey_badge()
 
         # Update recent dictations
         entries = history_manager.load_history()[:3]

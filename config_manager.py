@@ -6,7 +6,11 @@ CONFIG_FILE = "config.json"
 def load_config():
     defaults = {
         "api_key": "", 
-        "hotkey": "ctrl+windows",
+        "hotkey_1": "ctrl+windows",
+        "mode_1": "default",
+        "hotkey_2_enabled": False,
+        "hotkey_2": "shift+windows",
+        "mode_2": "translate_en",
         "text_model": "llama-3.3-70b-versatile",
         "theme": "dark",
         "run_on_startup": False,
@@ -26,6 +30,13 @@ def load_config():
                 config.pop("hotkey_command", None)
                 if config.get("visualizer_style") in ("pulse", "dots", "ribbon"):
                     config["visualizer_style"] = "wave"
+                
+                # Migrate old single-hotkey config
+                if "hotkey" in config and "hotkey_1" not in config:
+                    config["hotkey_1"] = config["hotkey"]
+                if "formatting_style" in config and "mode_1" not in config:
+                    config["mode_1"] = config["formatting_style"]
+
                 for k, v in defaults.items():
                     if k not in config:
                         config[k] = v

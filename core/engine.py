@@ -43,6 +43,7 @@ class PitchCore(QObject):
         self._is_recording = False
         self._is_processing = False
         self._recording_start_time = None
+        self._current_mode = None
         
         # Hotkey monitor thread
         self._monitor_running = True
@@ -57,9 +58,10 @@ class PitchCore(QObject):
     def is_processing(self) -> bool:
         return self._is_processing
 
-    def start_recording(self) -> None:
+    def start_recording(self, mode: str = None) -> None:
         if self._is_recording or self._is_processing:
             return
+        self._current_mode = mode
         self._is_recording = True
         self._recording_start_time = time.time()
         self.state_changed.emit("recording")
@@ -88,8 +90,16 @@ class PitchCore(QObject):
             self._is_processing = False
             return
 
+        # Use the specific mode active during recording, or fallback to the dashboard's current selection
+        worker_config = self._config.copy()
+        if self._current_mode:
+            worker_config["formatting_style"] = self._current_mode
+        else:
+            # Fallback to the globally selected dashboard style if recording was triggered manually/by other means
+            worker_config["formatting_style"] = self._config.get("formatting_style", "default")
+
         client = self._get_groq_client()
-        self._worker = GroqWorker(filename, self._config, client)
+        self._worker = GroqWorker(filename, worker_config, client)
         self._worker.result_ready.connect(self._on_worker_result)
         self._worker.error_occurred.connect(self._on_worker_error)
         self._worker.finished.connect(self._worker.deleteLater)
@@ -118,28 +128,75 @@ class PitchCore(QObject):
     def _volume_callback(self, vol: float) -> None:
         self.volume_changed.emit(vol)
 
-    def _hotkey_monitor(self) -> None:
-        was_pressed = False
-        while self._monitor_running:
-            hotkey = self._config.get("hotkey", "ctrl+windows")
+    def _is_hotkey_active(self, hotkey_str: str) -> bool:
+        if not hotkey_str:
+            return False
+        parts = [p.strip().lower() for p in hotkey_str.split('+')]
+        if not parts:
+            return False
+        try:
+            for part in parts:
+                if not keyboard.is_pressed(part):
+                    return False
             
-            # Force replace old hotkeys if they're still in the config
-            if hotkey in ["left alt+space", "f8"]:
-                hotkey = "ctrl+windows"
+            # Exclusion check for other modifier keys to avoid conflicts
+            modifiers = {
+                'ctrl': ['ctrl', 'left ctrl', 'right ctrl'],
+                'alt': ['alt', 'left alt', 'right alt'],
+                'shift': ['shift', 'left shift', 'right shift'],
+                'windows': ['windows', 'win', 'left windows', 'right windows']
+            }
+            
+            expected_mods = set()
+            for part in parts:
+                for mod_name, aliases in modifiers.items():
+                    if part in aliases:
+                        expected_mods.add(mod_name)
+                        break
+            
+            for mod_name, aliases in modifiers.items():
+                if mod_name not in expected_mods:
+                    for alias in aliases:
+                        if keyboard.is_pressed(alias):
+                            return False
+            return True
+        except Exception:
+            return False
+
+    def _hotkey_monitor(self) -> None:
+        active_hotkey = None
+        while self._monitor_running:
+            if not self._config.get("api_key") or self._is_processing:
+                time.sleep(0.05)
+                continue
+                
+            h1 = self._config.get("hotkey_1", "ctrl+windows")
+            h2_enabled = self._config.get("hotkey_2_enabled", False)
+            h2 = self._config.get("hotkey_2", "shift+windows") if h2_enabled else None
+            
+            # Run migration compatibility just in case
+            if h1 in ["left alt+space", "f8"]:
+                h1 = "ctrl+windows"
                 
             try:
-                if self._config.get("api_key") and not self._is_processing:
-                    hotkey_pressed = keyboard.is_pressed(hotkey)
-                    if hotkey_pressed:
-                        if not was_pressed:
-                            was_pressed = True
-                            self.start_recording()
-                    else:
-                        if was_pressed:
-                            was_pressed = False
-                            self.stop_recording()
+                if not self._is_recording:
+                    # Check if either hotkey is pressed
+                    if self._is_hotkey_active(h1):
+                        active_hotkey = 'hotkey_1'
+                        mode = self._config.get("mode_1", "default")
+                        self.start_recording(mode)
+                    elif h2 and self._is_hotkey_active(h2):
+                        active_hotkey = 'hotkey_2'
+                        mode = self._config.get("mode_2", "translate_en")
+                        self.start_recording(mode)
+                else:
+                    # Recording is active. Check if the triggering hotkey has been released
+                    target_hotkey_str = h1 if active_hotkey == 'hotkey_1' else h2
+                    if not target_hotkey_str or not self._is_hotkey_active(target_hotkey_str):
+                        self.stop_recording()
+                        active_hotkey = None
             except Exception as e:
-                print(f"Hotkey error: {e}")
+                print(f"Hotkey monitor error: {e}")
             time.sleep(0.05)
 
     def _on_worker_result(self, result: dict) -> None:
