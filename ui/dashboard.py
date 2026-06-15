@@ -6,7 +6,7 @@ from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel,
                              QStackedWidget, QPlainTextEdit, QFrame, QApplication,
                              QGridLayout,
                              QSizePolicy, QScrollArea, QSlider, QColorDialog,
-                             QDialog, QMessageBox, QCheckBox)
+                             QDialog, QMessageBox)
 from PyQt6.QtCore import (Qt, QTimer, QRectF, QPropertyAnimation, QEasingCurve,
                            pyqtProperty, pyqtSignal, QPointF, QPoint)
 from PyQt6.QtGui import (QPainter, QPen, QBrush, QFont, QIcon, QPixmap,
@@ -122,7 +122,7 @@ class DashboardWindow(QWidget):
 
     def init_ui(self):
         self.setWindowTitle("PITCH")
-        self.setFixedSize(700, 580)
+        self.setFixedSize(760, 620)
         self.setWindowFlags(Qt.WindowType.FramelessWindowHint)
 
         # Main vertical layout: title bar + content
@@ -167,7 +167,7 @@ class DashboardWindow(QWidget):
     def _build_sidebar(self):
         sidebar = QFrame()
         sidebar.setObjectName("Sidebar")
-        sidebar.setFixedWidth(200)
+        sidebar.setFixedWidth(210)
 
         lay = QVBoxLayout(sidebar)
         lay.setContentsMargins(14, 20, 14, 16)
@@ -191,12 +191,12 @@ class DashboardWindow(QWidget):
 
         self.nav_buttons = []
         nav_items = [
-            ("Обзор",          0),
-            ("Визуализатор",   1),
-            ("История",        2),
-            ("Настройки",      3),
-            ("Распознавание",  4),
-            ("Логи",           5),
+            ("  Обзор",          0),
+            ("  Визуализатор",   1),
+            ("  История",        2),
+            ("  Настройки",      3),
+            ("  Распознавание",  4),
+            ("  Логи",           5),
         ]
         for label, idx in nav_items:
             btn = QPushButton(label)
@@ -222,8 +222,8 @@ class DashboardWindow(QWidget):
         card = QFrame()
         card.setObjectName("Card")
         cl = QVBoxLayout(card)
-        cl.setContentsMargins(12, 10, 12, 10)
-        cl.setSpacing(3)
+        cl.setContentsMargins(16, 14, 16, 14)
+        cl.setSpacing(4)
         cap = QLabel(caption)
         cap.setObjectName("StatCap")
         val = QLabel("0")
@@ -238,10 +238,10 @@ class DashboardWindow(QWidget):
         outer.setContentsMargins(0, 0, 0, 0)
 
         inner = QWidget()
-        inner.setFixedWidth(420)
+        inner.setFixedWidth(460)
         lay = QVBoxLayout(inner)
-        lay.setContentsMargins(0, 20, 0, 20)
-        lay.setSpacing(10)
+        lay.setContentsMargins(0, 24, 0, 24)
+        lay.setSpacing(12)
 
         # ── Header ──
         hdr = QHBoxLayout()
@@ -249,14 +249,18 @@ class DashboardWindow(QWidget):
         title.setObjectName("PageTitle")
         hdr.addWidget(title)
         hdr.addStretch()
-        self.dash_state_badge = QLabel("● Ожидание")
-        self.dash_state_badge.setStyleSheet("color: #10B981; font-size: 12px; font-weight: 600;")
+        self.dash_state_badge = QLabel("● Готов")
+        self.dash_state_badge.setStyleSheet(
+            "color: #10B981; font-size: 12px; font-weight: 700; "
+            "background: rgba(16,185,129,0.12); border: 1px solid rgba(16,185,129,0.30); "
+            "border-radius: 6px; padding: 3px 10px;"
+        )
         hdr.addWidget(self.dash_state_badge)
         lay.addLayout(hdr)
 
         # ── Stats grid 2×2 ──
         stats_grid = QGridLayout()
-        stats_grid.setSpacing(8)
+        stats_grid.setSpacing(10)
         c1, self.val_total = self._stat_card("ДИКТОВОК")
         c2, self.val_lat   = self._stat_card("ЗАДЕРЖКА")
         c3, self.val_words = self._stat_card("СЛОВ")
@@ -341,10 +345,10 @@ class DashboardWindow(QWidget):
         outer.setContentsMargins(0, 0, 0, 0)
 
         inner = QWidget()
-        inner.setFixedWidth(420)
+        inner.setFixedWidth(460)
         lay = QVBoxLayout(inner)
-        lay.setContentsMargins(0, 20, 0, 20)
-        lay.setSpacing(10)
+        lay.setContentsMargins(0, 24, 0, 24)
+        lay.setSpacing(12)
 
         # ── Header ──
         hdr = QHBoxLayout()
@@ -575,11 +579,11 @@ class DashboardWindow(QWidget):
         outer.setContentsMargins(0, 0, 0, 0)
 
         inner = QWidget()
-        inner.setFixedWidth(420)
+        inner.setFixedWidth(460)
         inner.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Expanding)
         lay = QVBoxLayout(inner)
-        lay.setContentsMargins(0, 20, 0, 20)
-        lay.setSpacing(10)
+        lay.setContentsMargins(0, 24, 0, 24)
+        lay.setSpacing(12)
 
         self.history_stack = QStackedWidget()
 
@@ -688,10 +692,10 @@ class DashboardWindow(QWidget):
         outer.setContentsMargins(0, 0, 0, 0)
 
         inner = QWidget()
-        inner.setFixedWidth(400)
+        inner.setFixedWidth(440)
         lay = QVBoxLayout(inner)
-        lay.setContentsMargins(0, 20, 0, 20)
-        lay.setSpacing(10)
+        lay.setContentsMargins(0, 24, 0, 24)
+        lay.setSpacing(12)
 
         title = QLabel("Настройки")
         title.setObjectName("PageTitle")
@@ -774,40 +778,24 @@ class DashboardWindow(QWidget):
         h1_layout.addWidget(setting_cell("РЕЖИМ 1", self.mode_1_combo), 1)
         icl.addLayout(h1_layout)
         
-        # Hotkey 2 Checkbox
-        h2_enable_layout = QHBoxLayout()
-        h2_enable_layout.setContentsMargins(0, 0, 0, 0)
-        self.hotkey_2_enabled_cb = QCheckBox("Использовать второе сочетание клавиш")
-        self.hotkey_2_enabled_cb.setStyleSheet("""
-            QCheckBox {
-                color: #94A3B8;
-                font-size: 12px;
-                font-weight: 500;
-                spacing: 8px;
-            }
-            QCheckBox:hover {
-                color: #F8FAFC;
-            }
-            QCheckBox::indicator {
-                width: 16px;
-                height: 16px;
-                border-radius: 4px;
-                border: 1px solid #334155;
-                background-color: #1E293B;
-            }
-            QCheckBox::indicator:checked {
-                background-color: #10B981;
-                border-color: #10B981;
-            }
-            QCheckBox::indicator:unchecked:hover {
-                border-color: #475569;
-            }
-        """)
-        self.hotkey_2_enabled_cb.setChecked(self.config.get("hotkey_2_enabled", False))
-        self.hotkey_2_enabled_cb.stateChanged.connect(self._auto_save_settings)
-        self.hotkey_2_enabled_cb.stateChanged.connect(self._toggle_hotkey_2_widgets)
-        h2_enable_layout.addWidget(self.hotkey_2_enabled_cb)
-        icl.addLayout(h2_enable_layout)
+        # Hotkey 2 toggle row — same style as other setting toggles
+        self.hotkey_2_enabled_cb = ToggleSwitch(checked=self.config.get("hotkey_2_enabled", False))
+        self.hotkey_2_enabled_cb.toggled.connect(self._auto_save_settings)
+        self.hotkey_2_enabled_cb.toggled.connect(self._toggle_hotkey_2_widgets)
+
+        h2_toggle_row = QHBoxLayout()
+        h2_toggle_row.setSpacing(12)
+        h2_lbl_block = QVBoxLayout()
+        h2_lbl_block.setSpacing(2)
+        h2_title = QLabel("Второе сочетание клавиш")
+        h2_title.setObjectName("FieldLbl")
+        h2_sub = QLabel("Назначить отдельный режим для второго хоткея")
+        h2_sub.setObjectName("DetailMeta")
+        h2_lbl_block.addWidget(h2_title)
+        h2_lbl_block.addWidget(h2_sub)
+        h2_toggle_row.addLayout(h2_lbl_block, 1)
+        h2_toggle_row.addWidget(self.hotkey_2_enabled_cb)
+        icl.addLayout(h2_toggle_row)
         
         # Hotkey 2 Panel
         self.h2_widget = QWidget()
@@ -891,7 +879,7 @@ class DashboardWindow(QWidget):
         self.recognition_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self.recognition_scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self.recognition_scroll.setFrameShape(QFrame.Shape.NoFrame)
-        self.recognition_scroll.setFixedWidth(420)
+        self.recognition_scroll.setFixedWidth(460)
         self.recognition_scroll.setStyleSheet("QScrollArea { background: transparent; border: none; }")
 
         self.recognition_inner = QWidget()
@@ -1066,11 +1054,23 @@ class DashboardWindow(QWidget):
     def _update_style_ui(self, key):
         is_dark = self.theme_name == "dark"
         if is_dark:
-            active_style = "background: rgba(160, 160, 160, 0.15); border: 1px solid rgba(160, 160, 160, 0.40); color: #C0C0C0; font-weight: 700; border-radius: 6px;"
-            idle_style = "background: #2A2A2A; border: 1px solid #3A3A3A; color: #8A8A8A; font-weight: 500; border-radius: 6px;"
+            active_style = (
+                "background: rgba(124,58,237,0.18); border: 1px solid rgba(139,92,246,0.55); "
+                "color: #C4B5FD; font-weight: 700; border-radius: 8px;"
+            )
+            idle_style = (
+                "background: #111120; border: 1px solid #1E1D35; "
+                "color: #7B7AA0; font-weight: 500; border-radius: 8px;"
+            )
         else:
-            active_style = "background: rgba(42, 42, 42, 0.12); border: 1px solid rgba(42, 42, 42, 0.30); color: #1A1A1A; font-weight: 700; border-radius: 6px;"
-            idle_style = "background: #FFFFFF; border: 1px solid #E0E0E0; color: #6B6B6B; font-weight: 500; border-radius: 6px;"
+            active_style = (
+                "background: rgba(124,58,237,0.12); border: 1px solid rgba(124,58,237,0.35); "
+                "color: #7C3AED; font-weight: 700; border-radius: 8px;"
+            )
+            idle_style = (
+                "background: #FFFFFF; border: 1px solid #E2E0F0; "
+                "color: #6366A0; font-weight: 500; border-radius: 8px;"
+            )
             
         for k, btn in self.style_buttons.items():
             if k == key:
@@ -1101,11 +1101,11 @@ class DashboardWindow(QWidget):
         outer.setContentsMargins(0, 0, 0, 0)
 
         inner = QWidget()
-        inner.setFixedWidth(400)
+        inner.setFixedWidth(440)
         inner.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Expanding)
         lay = QVBoxLayout(inner)
-        lay.setContentsMargins(0, 20, 0, 20)
-        lay.setSpacing(10)
+        lay.setContentsMargins(0, 24, 0, 24)
+        lay.setSpacing(12)
 
         hdr = QHBoxLayout()
         title = QLabel("Логи")
@@ -1153,6 +1153,7 @@ class DashboardWindow(QWidget):
                     break
 
         self.startup_toggle.set_theme(theme)
+        self.hotkey_2_enabled_cb.set_theme(theme)
         self.raw_whisper_toggle.set_theme(theme)
         self.hallucination_filter_toggle.set_theme(theme)
         self.min_duration_seg.set_theme(theme)
@@ -1171,17 +1172,21 @@ class DashboardWindow(QWidget):
             self._update_style_ui(self.config.get("formatting_style", "default"))
 
     def set_system_state(self, state):
-        colors = {
-            "idle":       ("#10B981", "● Готов"),
-            "recording":  ("#06B6D4", "● Запись"),
-            "processing": ("#8B5CF6", "● Обработка"),
+        states = {
+            "idle":       ("#10B981", "rgba(16,185,129,0.12)",  "rgba(16,185,129,0.30)",  "● Готов"),
+            "recording":  ("#38BDF8", "rgba(56,189,248,0.12)",  "rgba(56,189,248,0.30)",  "● Запись"),
+            "processing": ("#A78BFA", "rgba(167,139,250,0.12)", "rgba(167,139,250,0.30)", "● Обработка"),
         }
-        color, text = colors.get(state, ("#10B981", "● Готов"))
-        style = f"color: {color}; font-size: 11px;"
+        color, bg, bdr, text = states.get(state, states["idle"])
+        badge_style = (
+            f"color: {color}; font-size: 12px; font-weight: 700; "
+            f"background: {bg}; border: 1px solid {bdr}; "
+            f"border-radius: 6px; padding: 3px 10px;"
+        )
         self.status_dot_lbl.setText(text)
-        self.status_dot_lbl.setStyleSheet(style)
+        self.status_dot_lbl.setStyleSheet(f"color: {color}; font-size: 11px;")
         self.dash_state_badge.setText(text)
-        self.dash_state_badge.setStyleSheet(f"color: {color}; font-size: 12px; font-weight: 600;")
+        self.dash_state_badge.setStyleSheet(badge_style)
 
     def switch_tab(self, index):
         self.stack.setCurrentIndex(index)
