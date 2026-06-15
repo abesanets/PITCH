@@ -44,11 +44,25 @@ class PitchCore(QObject):
         self._is_processing = False
         self._recording_start_time = None
         self._current_mode = None
+        self._active_hotkey = None
         
-        # Hotkey monitor thread
-        self._monitor_running = True
-        self._monitor_thread = threading.Thread(target=self._hotkey_monitor, daemon=True)
-        self._monitor_thread.start()
+        # Event-driven keyboard hook
+        self.__monitor_running = True
+        self._keyboard_hook = keyboard.hook(self._on_keyboard_event)
+
+    @property
+    def _monitor_running(self) -> bool:
+        return self.__monitor_running
+
+    @_monitor_running.setter
+    def _monitor_running(self, value: bool) -> None:
+        self.__monitor_running = value
+        if not value and hasattr(self, '_keyboard_hook') and self._keyboard_hook is not None:
+            try:
+                keyboard.unhook(self._keyboard_hook)
+                self._keyboard_hook = None
+            except Exception:
+                pass
 
     @property
     def is_recording(self) -> bool:
@@ -163,41 +177,37 @@ class PitchCore(QObject):
         except Exception:
             return False
 
-    def _hotkey_monitor(self) -> None:
-        active_hotkey = None
-        while self._monitor_running:
-            if not self._config.get("api_key") or self._is_processing:
-                time.sleep(0.05)
-                continue
-                
-            h1 = self._config.get("hotkey_1", "ctrl+windows")
-            h2_enabled = self._config.get("hotkey_2_enabled", False)
-            h2 = self._config.get("hotkey_2", "shift+windows") if h2_enabled else None
-            
-            # Run migration compatibility just in case
-            if h1 in ["left alt+space", "f8"]:
-                h1 = "ctrl+windows"
-                
-            try:
-                if not self._is_recording:
-                    # Check if either hotkey is pressed
-                    if self._is_hotkey_active(h1):
-                        active_hotkey = 'hotkey_1'
-                        mode = self._config.get("mode_1", "default")
-                        self.start_recording(mode)
-                    elif h2 and self._is_hotkey_active(h2):
-                        active_hotkey = 'hotkey_2'
-                        mode = self._config.get("mode_2", "translate_en")
-                        self.start_recording(mode)
-                else:
-                    # Recording is active. Check if the triggering hotkey has been released
-                    target_hotkey_str = h1 if active_hotkey == 'hotkey_1' else h2
-                    if not target_hotkey_str or not self._is_hotkey_active(target_hotkey_str):
-                        self.stop_recording()
-                        active_hotkey = None
-            except Exception as e:
-                print(f"Hotkey monitor error: {e}")
-            time.sleep(0.05)
+    def _on_keyboard_event(self, event) -> None:
+        if not self.__monitor_running or not self._config.get("api_key") or self._is_processing:
+            return
+
+        h1 = self._config.get("hotkey_1", "ctrl+windows")
+        h2_enabled = self._config.get("hotkey_2_enabled", False)
+        h2 = self._config.get("hotkey_2", "shift+windows") if h2_enabled else None
+
+        # Run migration compatibility just in case
+        if h1 in ["left alt+space", "f8"]:
+            h1 = "ctrl+windows"
+
+        try:
+            if not self._is_recording:
+                # Check if either hotkey is pressed
+                if self._is_hotkey_active(h1):
+                    self._active_hotkey = 'hotkey_1'
+                    mode = self._config.get("mode_1", "default")
+                    self.start_recording(mode)
+                elif h2 and self._is_hotkey_active(h2):
+                    self._active_hotkey = 'hotkey_2'
+                    mode = self._config.get("mode_2", "translate_en")
+                    self.start_recording(mode)
+            else:
+                # Recording is active. Check if the triggering hotkey has been released
+                target_hotkey_str = h1 if self._active_hotkey == 'hotkey_1' else h2
+                if not target_hotkey_str or not self._is_hotkey_active(target_hotkey_str):
+                    self.stop_recording()
+                    self._active_hotkey = None
+        except Exception as e:
+            print(f"Hotkey event handler error: {e}")
 
     def _on_worker_result(self, result: dict) -> None:
         text_model = self._config.get("text_model", "llama-3.3-70b-versatile")
