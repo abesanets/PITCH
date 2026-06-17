@@ -1,5 +1,5 @@
 from PyQt6.QtCore import QThread, pyqtSignal
-from groq_client import process_audio_pipeline
+from .groq_client import process_audio_pipeline
 
 class GroqWorker(QThread):
     """

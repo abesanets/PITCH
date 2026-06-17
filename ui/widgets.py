@@ -230,3 +230,4 @@ class ElidedLabel(QWidget):
         elided = fm.elidedText(self._text, Qt.TextElideMode.ElideRight, self.width())
         p.drawText(0, fm.ascent(), elided)
         p.end()
+

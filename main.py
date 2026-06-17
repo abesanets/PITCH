@@ -9,9 +9,8 @@ else:
 
 import time
 from PyQt6.QtWidgets import QApplication
-from config_manager import load_config
-from audio_recorder import AudioRecorder
-from core import PitchCore, ClipboardManager, LogRedirector
+from core.config_manager import load_config
+from core import PitchCore, ClipboardManager, LogRedirector, AudioRecorder
 from ui import VoiceAssistant
 
 def main():

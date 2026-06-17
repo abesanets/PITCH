@@ -5,9 +5,9 @@ from typing import Callable
 import keyboard
 from PyQt6.QtCore import QObject, pyqtSignal
 
-from audio_recorder import AudioRecorder
-from core.groq_worker import GroqWorker
-import history_manager
+from .audio_recorder import AudioRecorder
+from .groq_worker import GroqWorker
+from . import history_manager
 
 class PitchCore(QObject):
     """

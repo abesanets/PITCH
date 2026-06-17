@@ -1,13 +1,11 @@
 """Visualizer widgets for VoiceAssistant"""
-import os
 import math
 from PyQt6.QtWidgets import QWidget, QApplication
 from PyQt6.QtCore import Qt, QTimer, QRectF, pyqtSignal, QPointF
-from PyQt6.QtGui import (QPainter, QColor, QPen, QBrush, QFont, QCursor, 
-                         QPainterPath, QLinearGradient)
+from PyQt6.QtGui import QPainter, QColor, QPen, QBrush, QFont, QCursor, QPainterPath, QLinearGradient
 
-from .styles import _lerp_color
-from .styles_data import VISUALIZER_PRESETS, VISUALIZER_SIZES
+from ..styles import _lerp_color
+from ..styles_data import VISUALIZER_PRESETS, VISUALIZER_SIZES
 
 
 class PreviewWidget(QWidget):

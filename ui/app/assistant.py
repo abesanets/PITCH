@@ -6,9 +6,9 @@ from PyQt6.QtWidgets import QApplication, QSystemTrayIcon, QMenu
 from PyQt6.QtGui import QIcon, QPixmap, QPainter, QColor, QBrush
 from PyQt6.QtCore import Qt
 
-from config_manager import load_config, save_config
-from ui.visualizer import OverlayWindow
-from ui.dashboard import DashboardWindow
+from core.config_manager import load_config, save_config
+from ..visualizer.widgets import OverlayWindow
+from .dashboard import DashboardWindow
 from core.engine import PitchCore
 from core.clipboard import ClipboardManager
 from core.startup import update_startup_registry

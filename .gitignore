@@ -33,3 +33,6 @@ pyrightconfig.json
 *.njsproj
 *.sln
 *.sw?
+
+# AI Agent cheat sheets
+ARCHITECTURE.md

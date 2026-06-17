@@ -12,10 +12,10 @@ from PyQt6.QtCore import (Qt, QTimer, QRectF, QPropertyAnimation, QEasingCurve,
 from PyQt6.QtGui import (QPainter, QPen, QBrush, QFont, QIcon, QPixmap,
                           QCursor, QPainterPath, QLinearGradient, QPalette, QColor)
 
-import history_manager
-from .styles import get_stylesheet
-from .widgets import ToggleSwitch, SegmentedControl, ColorPresetSelector, ElidedLabel
-from .visualizer import PreviewWidget, OverlayWindow
+from core import history_manager
+from ..styles import get_stylesheet
+from ..widgets import ToggleSwitch, SegmentedControl, ColorPresetSelector, ElidedLabel
+from ..visualizer.widgets import PreviewWidget, OverlayWindow
 
 STYLE_DETAILS = {
     "default": {
