@@ -14,10 +14,8 @@ class ToggleSwitch(QWidget):
     toggled = pyqtSignal(bool)
 
     # Indigo/violet accent palette matching the redesigned theme
-    _COL_ON_DARK   = QColor(124, 58, 237)   # indigo-600
-    _COL_OFF_DARK  = QColor(30, 28, 50)     # dark surface
-    _COL_ON_LIGHT  = QColor(109, 40, 217)   # violet-700
-    _COL_OFF_LIGHT = QColor(210, 207, 235)  # light muted
+    _COL_ON   = QColor(124, 58, 237)   # indigo-600
+    _COL_OFF  = QColor(30, 28, 50)     # dark surface
 
     def __init__(self, parent=None, checked=False):
         super().__init__(parent)
@@ -55,10 +53,7 @@ class ToggleSwitch(QWidget):
         w, h = self.width(), self.height()
         r = h / 2
 
-        col_on  = self._COL_ON_DARK  if self._theme == "dark" else self._COL_ON_LIGHT
-        col_off = self._COL_OFF_DARK if self._theme == "dark" else self._COL_OFF_LIGHT
-
-        track = _lerp_color(col_off, col_on, self._handle_pos)
+        track = _lerp_color(self._COL_OFF, self._COL_ON, self._handle_pos)
         p.setBrush(QBrush(track))
         p.setPen(Qt.PenStyle.NoPen)
         p.drawRoundedRect(QRectF(0, 0, w, h), r, r)
@@ -109,24 +104,14 @@ class SegmentedControl(QWidget):
     def set_accent(self, primary_hex): pass
 
     def _update_styles(self):
-        if self._theme == "dark":
-            active_bg   = "rgba(124,58,237,0.18)"
-            active_bdr  = "rgba(139,92,246,0.55)"
-            active_txt  = "#C4B5FD"          # violet-300
-            idle_bg     = "#111120"
-            idle_bdr    = "#1E1D35"
-            idle_txt    = "#7B7AA0"
-            hover_bg    = "#17162A"
-            hover_txt   = "#E8E6FF"
-        else:
-            active_bg   = "rgba(124,58,237,0.12)"
-            active_bdr  = "rgba(124,58,237,0.35)"
-            active_txt  = "#7C3AED"          # violet-600
-            idle_bg     = "#FFFFFF"
-            idle_bdr    = "#E2E0F0"
-            idle_txt    = "#6366A0"
-            hover_bg    = "#F0EEFF"
-            hover_txt   = "#0F0A2A"
+        active_bg   = "rgba(124,58,237,0.18)"
+        active_bdr  = "rgba(139,92,246,0.55)"
+        active_txt  = "#C4B5FD"          # violet-300
+        idle_bg     = "#111120"
+        idle_bdr    = "#1E1D35"
+        idle_txt    = "#7B7AA0"
+        hover_bg    = "#17162A"
+        hover_txt   = "#E8E6FF"
 
         for i, btn in enumerate(self._buttons):
             if i == self._current:
@@ -198,9 +183,9 @@ class ColorPresetSelector(QWidget):
             if key == self._current:
                 p.setPen(QPen(QColor(139, 92, 246), 2.5))  # violet-500 selection ring
             else:
-                p.setPen(QPen(QColor(30, 29, 53) if self._theme == "dark" else QColor(226, 224, 240), 1))
+                p.setPen(QPen(QColor(30, 29, 53), 1))
             p.drawEllipse(QPointF(cx, cy), r, r)
-            p.setPen(QPen(QColor(138, 138, 138) if self._theme == "dark" else QColor(107, 107, 107)))
+            p.setPen(QPen(QColor(138, 138, 138)))
             font = QFont("Arial", 8)
             p.setFont(font)
             name = preset["name"]

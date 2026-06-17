@@ -175,7 +175,7 @@ class DashboardWindow(QWidget):
         self.sidebar_layout = lay  # Store reference for icon updates
 
         # Logo only - no text label
-        icon_name = "white_pitch_on_black.jpeg" if self.theme_name == "dark" else "black_pitch_on_white.jpeg"
+        icon_name = "white_pitch_on_black.jpeg"
         icon_path = os.path.join(os.path.dirname(__file__), "..", "assets", icon_name)
         if os.path.exists(icon_path):
             logo_lbl = QLabel()
@@ -401,10 +401,6 @@ class DashboardWindow(QWidget):
         self.shape_seg.setCurrentIndex(style_map.get(self.config.get("visualizer_style", "wave"), 0))
         self.shape_seg.currentChanged.connect(self._on_shape_changed)
 
-        self.theme_seg = SegmentedControl(["Dark", "Light"])
-        self.theme_seg.setCurrentIndex(0 if self.config.get("theme", "dark") == "dark" else 1)
-        self.theme_seg.currentChanged.connect(lambda i: self.apply_theme("dark" if i == 0 else "light"))
-
         self.bg_seg = SegmentedControl(["Сплошной", "Без фона"])
         bg_map = {"solid": 0, "none": 1}
         self.bg_seg.setCurrentIndex(bg_map.get(self.config.get("visualizer_bg_mode", "solid"), 0))
@@ -415,18 +411,18 @@ class DashboardWindow(QWidget):
         self.size_seg.setCurrentIndex(size_map.get(self.config.get("visualizer_size", "medium"), 2))
         self.size_seg.currentChanged.connect(self._on_size_changed)
 
-        # Row 1: Форма | Тема
+        # Row 1: Форма | Размер
         row1 = QHBoxLayout()
         row1.setSpacing(16)
         row1.addWidget(ctrl_cell("ФОРМА", self.shape_seg))
-        row1.addWidget(ctrl_cell("ТЕМА", self.theme_seg))
+        row1.addWidget(ctrl_cell("РАЗМЕР", self.size_seg))
         cl.addLayout(row1)
 
-        # Row 2: Фон | Размер
+        # Row 2: Фон
         row2 = QHBoxLayout()
         row2.setSpacing(16)
         row2.addWidget(ctrl_cell("ФОН", self.bg_seg))
-        row2.addWidget(ctrl_cell("РАЗМЕР", self.size_seg))
+        row2.addStretch()
         cl.addLayout(row2)
 
         # Row 3: Чувствительность — slider + value label
@@ -508,7 +504,7 @@ class DashboardWindow(QWidget):
         self.config["visualizer_size"]  = ["xs", "small", "medium", "large", "xl"][self.size_seg.currentIndex()]
         self.config["visualizer_color_preset"] = self.color_selector.currentPreset()
         self.config["visualizer_bg_mode"] = ["solid", "none"][self.bg_seg.currentIndex()]
-        self.config["theme"] = "dark" if self.theme_seg.currentIndex() == 0 else "light"
+        self.config["theme"] = "dark"
         self.config["visualizer_sensitivity"] = self.sens_slider.value() / 5.0
         self.save_callback(self.config)
 
@@ -541,7 +537,7 @@ class DashboardWindow(QWidget):
         self.config["mode_2"]     = mode_map.get(self.mode_2_combo.currentText(), "translate_en")
         
         self.config["text_model"] = self.model_combo.currentText()
-        self.config["theme"]      = "dark" if self.theme_seg.currentIndex() == 0 else "light"
+        self.config["theme"]      = "dark"
         self.config["run_on_startup"] = self.startup_toggle.isChecked()
         # Don't save base_url here - it's handled by _on_base_url_changed
         self.save_callback(self.config)
@@ -1139,7 +1135,7 @@ class DashboardWindow(QWidget):
         if os.path.exists(icon_path):
             self.setWindowIcon(QIcon(icon_path))
             # Update sidebar logo
-            sidebar_icon_name = "white_pitch_on_black.jpeg" if theme == "dark" else "black_pitch_on_white.jpeg"
+            sidebar_icon_name = "white_pitch_on_black.jpeg"
             sidebar_icon_path = os.path.join(os.path.dirname(__file__), "..", "assets", sidebar_icon_name)
             for i in reversed(range(self.sidebar_layout.count())):
                 widget = self.sidebar_layout.itemAt(i).widget()
@@ -1155,7 +1151,6 @@ class DashboardWindow(QWidget):
         self.raw_whisper_toggle.set_theme(theme)
         self.hallucination_filter_toggle.set_theme(theme)
         self.min_duration_seg.set_theme(theme)
-        self.theme_seg.set_theme(theme)
         self.shape_seg.set_theme(theme)
         self.size_seg.set_theme(theme)
         self.bg_seg.set_theme(theme)

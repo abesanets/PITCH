@@ -27,6 +27,7 @@ voice_assistant_temp.wav
 # IDE configuration files
 .vscode/
 .idea/
+pyrightconfig.json
 *.suo
 *.ntvs*
 *.njsproj

@@ -60,8 +60,8 @@ class PreviewWidget(QWidget):
         
         # Draw background based on mode
         if self._bg_mode == "solid":
-            bg = QColor(9, 9, 11, 245) if self._theme == "dark" else QColor(250, 250, 250, 240)
-            brd = QColor(39, 39, 42) if self._theme == "dark" else QColor(228, 228, 231)
+            bg = QColor(9, 9, 11, 245)
+            brd = QColor(39, 39, 42)
             p.setBrush(QBrush(bg))
             p.setPen(QPen(brd, 1))
             p.drawRoundedRect(QRectF(ox, oy, ow, oh), 8, 8)
@@ -242,12 +242,8 @@ class OverlayWindow(QWidget):
         
         preset = VISUALIZER_PRESETS.get(self.color_preset, VISUALIZER_PRESETS["mono"])
 
-        if self.theme == "light":
-            bg_color   = QColor(240, 240, 240, 185)  # Soft light background
-            glow_color = QColor(255, 255, 255, 70)
-        else:
-            bg_color   = QColor(34, 34, 34, 172)     # Soft dark background
-            glow_color = QColor(255, 255, 255, 24)
+        bg_color   = QColor(34, 34, 34, 172)     # Soft dark background
+        glow_color = QColor(255, 255, 255, 24)
 
         # Draw background based on mode
         if self.bg_mode == "solid":
