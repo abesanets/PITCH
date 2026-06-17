@@ -1,5 +1,5 @@
 """UI package for VoiceAssistant"""
-from .styles import get_stylesheet, _lerp_color
+from .styles import get_stylesheet, _lerp_color, get_resource_path
 from .styles_data import ACCENT_PRESETS, VISUALIZER_PRESETS, VISUALIZER_SIZES
 from .widgets import ToggleSwitch, SegmentedControl, ColorPresetSelector, ElidedLabel
 from .visualizer.widgets import PreviewWidget, OverlayWindow
@@ -12,6 +12,7 @@ __all__ = [
     'VISUALIZER_PRESETS', 
     'VISUALIZER_SIZES',
     '_lerp_color',
+    'get_resource_path',
     'ToggleSwitch',
     'SegmentedControl',
     'ColorPresetSelector',

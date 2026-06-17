@@ -13,7 +13,7 @@ from PyQt6.QtGui import (QPainter, QPen, QBrush, QFont, QIcon, QPixmap,
                           QCursor, QPainterPath, QLinearGradient, QPalette, QColor)
 
 from core import history_manager
-from ..styles import get_stylesheet
+from ..styles import get_stylesheet, get_resource_path
 from ..widgets import ToggleSwitch, SegmentedControl, ColorPresetSelector, ElidedLabel
 from ..visualizer.widgets import PreviewWidget, OverlayWindow
 
@@ -155,8 +155,7 @@ class DashboardWindow(QWidget):
         self._build_recognition_tab()
         self._build_logs_tab()
 
-        icon_name = "p.jpeg"
-        icon_path = os.path.join(os.path.dirname(__file__), "..", "assets", icon_name)
+        icon_path = get_resource_path(os.path.join("assets", "p.jpeg"))
         if os.path.exists(icon_path):
             self.setWindowIcon(QIcon(icon_path))
 
@@ -175,8 +174,7 @@ class DashboardWindow(QWidget):
         self.sidebar_layout = lay  # Store reference for icon updates
 
         # Logo only - no text label
-        icon_name = "white_pitch_on_black.jpeg"
-        icon_path = os.path.join(os.path.dirname(__file__), "..", "assets", icon_name)
+        icon_path = get_resource_path(os.path.join("assets", "white_pitch_on_black.jpeg"))
         if os.path.exists(icon_path):
             logo_lbl = QLabel()
             logo_lbl.setObjectName("SidebarLogo")

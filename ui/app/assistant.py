@@ -12,6 +12,7 @@ from .dashboard import DashboardWindow
 from core.engine import PitchCore
 from core.clipboard import ClipboardManager
 from core.startup import update_startup_registry
+from ..styles import get_resource_path
 
 class VoiceAssistant:
     """UI layer for PITCH: tray, dashboard, and signal bindings."""
@@ -58,9 +59,7 @@ class VoiceAssistant:
         self.tray = QSystemTrayIcon()
         
         # Use theme-appropriate icon for tray
-        icon_name = "p.jpeg"
-        base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        icon_path = os.path.join(base_dir, 'assets', icon_name)
+        icon_path = get_resource_path(os.path.join("assets", "p.jpeg"))
         if os.path.exists(icon_path):
             self.tray.setIcon(QIcon(icon_path))
         else:
@@ -112,9 +111,7 @@ class VoiceAssistant:
         self.overlay.apply_config(self.config)
         
         # Update tray icon when theme changes
-        icon_name = "p.jpeg"
-        base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        icon_path = os.path.join(base_dir, 'assets', icon_name)
+        icon_path = get_resource_path(os.path.join("assets", "p.jpeg"))
         if os.path.exists(icon_path):
             self.tray.setIcon(QIcon(icon_path))
             

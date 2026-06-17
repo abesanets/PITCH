@@ -1,6 +1,15 @@
-"""Styles and themes for VoiceAssistant UI — Premium Redesign"""
+import os
+import sys
 from PyQt6.QtGui import QColor
 from .styles_data import ACCENT_PRESETS
+
+def get_resource_path(relative_path):
+    """Get absolute path to resource, works for dev and for PyInstaller."""
+    try:
+        base_path = sys._MEIPASS
+    except Exception:
+        base_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    return os.path.join(base_path, relative_path)
 
 # Fixed accent palette — indigo/violet for premium look
 UI_PRIMARY  = "#7C3AED"
