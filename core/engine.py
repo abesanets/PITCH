@@ -72,7 +72,7 @@ class PitchCore(QObject):
     def is_processing(self) -> bool:
         return self._is_processing
 
-    def start_recording(self, mode: str = None) -> None:
+    def start_recording(self, mode: str | None = None) -> None:
         if self._is_recording or self._is_processing:
             return
         self._current_mode = mode
