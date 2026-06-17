@@ -498,8 +498,6 @@ class DashboardWindow(QWidget):
 
     def _on_preset_changed(self, key):
         self.preview_widget.set_preset(key)
-        if key == "custom":
-            self.preview_widget.set_custom_colors(self.color_selector._custom_colors)
         self.config["visualizer_color_preset"] = key
         self.apply_theme(self.theme_name, key)
         self._auto_save_visualizer()

@@ -26,10 +26,6 @@ class PreviewWidget(QWidget):
         self._time_counter = 0.0
         self._scroll_offset = 0.0
         self._bg_mode = "solid"  # "solid", "none"
-        self._custom_colors = {
-            "dark": [QColor(244, 244, 245, 255), QColor(161, 161, 170, 160), QColor(113, 113, 122, 100)],
-            "light": [QColor(24, 24, 27, 255), QColor(113, 113, 122, 140), QColor(161, 161, 170, 100)]
-        }
         self._timer = QTimer(self)
         self._timer.timeout.connect(self._tick)
         self._timer.start(33)
@@ -38,12 +34,6 @@ class PreviewWidget(QWidget):
     def set_preset(self, k): 
         self._preset_key = k
         self.update()
-    
-    def set_custom_colors(self, colors):
-        """Set custom colors for the custom preset"""
-        self._custom_colors = colors
-        if self._preset_key == "custom":
-            self.update()
             
     def set_size(self, k): self._size_key = k; self.update()
     def set_theme(self, t): self._theme = t; self.update()
@@ -77,20 +67,7 @@ class PreviewWidget(QWidget):
             p.drawRoundedRect(QRectF(ox, oy, ow, oh), 8, 8)
         # For "none" mode, skip background drawing entirely
         
-        if self._preset_key == "custom":
-            # Use custom colors
-            preset = {
-                "waves": [
-                    {"dark": self._custom_colors["dark"][0], "light": self._custom_colors["light"][0],
-                     "amp": 1.0, "freq": 0.12, "phase": 1.0, "width": 2.0},
-                    {"dark": self._custom_colors["dark"][1], "light": self._custom_colors["light"][1],
-                     "amp": 0.65, "freq": 0.22, "phase": -1.3, "width": 1.5},
-                    {"dark": self._custom_colors["dark"][2], "light": self._custom_colors["light"][2],
-                     "amp": 0.35, "freq": 0.08, "phase": 0.7, "width": 1.0},
-                ]
-            }
-        else:
-            preset = VISUALIZER_PRESETS.get(self._preset_key, VISUALIZER_PRESETS["mono"])
+        preset = VISUALIZER_PRESETS.get(self._preset_key, VISUALIZER_PRESETS["mono"])
         vol = self._demo_volume * self._sensitivity
         if self._style == "wave":    self._draw_wave(p, ox, oy, ow, oh, preset, vol)
         elif self._style == "bars":  self._draw_bars(p, ox, oy, ow, oh, preset, vol)
@@ -175,10 +152,6 @@ class OverlayWindow(QWidget):
         self.color_preset = "mono"
         self.size_key = "medium"
         self.bg_mode = "solid"  # "solid", "none"
-        self.custom_colors = {
-            "dark": [QColor(229, 229, 229, 255), QColor(138, 138, 138, 160), QColor(90, 90, 90, 100)],
-            "light": [QColor(26, 26, 26, 255), QColor(107, 107, 107, 140), QColor(154, 154, 154, 100)]
-        }
 
         self.setWindowFlags(
             Qt.WindowType.WindowStaysOnTopHint |
@@ -214,7 +187,7 @@ class OverlayWindow(QWidget):
 
     def set_vis_style(self, style):   self.vis_style = style
     def set_color_preset(self, key):
-        if key in VISUALIZER_PRESETS or key == "custom": self.color_preset = key
+        if key in VISUALIZER_PRESETS: self.color_preset = key
     def set_bg_mode(self, mode):
         self.bg_mode = mode
 
@@ -267,20 +240,7 @@ class OverlayWindow(QWidget):
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
         w, h = self.width(), self.height()
         
-        if self.color_preset == "custom":
-            # Use custom colors
-            preset = {
-                "waves": [
-                    {"dark": self.custom_colors["dark"][0], "light": self.custom_colors["light"][0],
-                     "amp": 1.0, "freq": 0.12, "phase": 1.0, "width": 2.0},
-                    {"dark": self.custom_colors["dark"][1], "light": self.custom_colors["light"][1],
-                     "amp": 0.65, "freq": 0.22, "phase": -1.3, "width": 1.5},
-                    {"dark": self.custom_colors["dark"][2], "light": self.custom_colors["light"][2],
-                     "amp": 0.35, "freq": 0.08, "phase": 0.7, "width": 1.0},
-                ]
-            }
-        else:
-            preset = VISUALIZER_PRESETS.get(self.color_preset, VISUALIZER_PRESETS["mono"])
+        preset = VISUALIZER_PRESETS.get(self.color_preset, VISUALIZER_PRESETS["mono"])
 
         if self.theme == "light":
             bg_color   = QColor(240, 240, 240, 185)  # Soft light background
