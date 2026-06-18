@@ -8,7 +8,7 @@ from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel,
                              QSizePolicy, QScrollArea, QSlider, QColorDialog,
                              QDialog, QMessageBox)
 from PyQt6.QtCore import (Qt, QTimer, QRectF, QPropertyAnimation, QEasingCurve,
-                           pyqtProperty, pyqtSignal, QPointF, QPoint)
+                           pyqtProperty, pyqtSignal, QPointF, QPoint, QSize)
 from PyQt6.QtGui import (QPainter, QPen, QBrush, QFont, QIcon, QPixmap,
                           QCursor, QPainterPath, QLinearGradient, QPalette, QColor)
 
@@ -124,6 +124,7 @@ class DashboardWindow(QWidget):
         self.setWindowTitle("PITCH")
         self.setFixedSize(760, 620)
         self.setWindowFlags(Qt.WindowType.FramelessWindowHint)
+        self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, True)
 
         # Main vertical layout: title bar + content
         main_vbox = QVBoxLayout(self)
@@ -143,8 +144,18 @@ class DashboardWindow(QWidget):
 
         root.addWidget(self._build_sidebar())
 
+        # Main content container for rounded chocolate panel
+        self.main_container = QFrame()
+        self.main_container.setObjectName("MainContentContainer")
+        container_layout = QVBoxLayout(self.main_container)
+        container_layout.setContentsMargins(12, 12, 12, 12)
+
         self.stack = QStackedWidget()
-        root.addWidget(self.stack)
+        container_layout.addWidget(self.stack)
+
+        # Give padding on the right/bottom/top to let the chocolate card look floating & premium
+        root.setContentsMargins(0, 0, 12, 12)
+        root.addWidget(self.main_container)
 
         main_vbox.addWidget(content)
 
@@ -173,32 +184,33 @@ class DashboardWindow(QWidget):
         lay.setSpacing(2)
         self.sidebar_layout = lay  # Store reference for icon updates
 
-        # Logo only - no text label
-        icon_path = get_resource_path(os.path.join("assets", "white_pitch_on_black.jpeg"))
-        if os.path.exists(icon_path):
-            logo_lbl = QLabel()
-            logo_lbl.setObjectName("SidebarLogo")
-            logo_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
-            # Scale to sidebar width (200px - margins)
-            logo_pix = QPixmap(icon_path).scaled(172, 172,
-                Qt.AspectRatioMode.KeepAspectRatio,
-                Qt.TransformationMode.SmoothTransformation)
-            logo_lbl.setPixmap(logo_pix)
-            lay.addWidget(logo_lbl)
-        lay.addSpacing(16)
+        # Script Logo Label
+        logo_lbl = QLabel("Pitch")
+        logo_lbl.setObjectName("AppName")
+        logo_lbl.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
+        logo_lbl.setContentsMargins(10, 10, 0, 10)
+        lay.addWidget(logo_lbl)
+        lay.addSpacing(8)
 
         self.nav_buttons = []
         nav_items = [
-            ("  Обзор",          0),
-            ("  Визуализатор",   1),
-            ("  История",        2),
-            ("  Настройки",      3),
-            ("  Распознавание",  4),
-            ("  Логи",           5),
+            ("Обзор",          0, "overview"),
+            ("Визуализатор",   1, "visualizer"),
+            ("История",        2, "history"),
+            ("Настройки",      3, "settings"),
+            ("Прогнозирование", 4, "predict"),
+            ("Логи",           5, "logs"),
         ]
-        for label, idx in nav_items:
-            btn = QPushButton(label)
-            btn.setObjectName("NavBtnActive" if idx == 0 else "NavBtn")
+        for label, idx, icon_key in nav_items:
+            btn = QPushButton("  " + label)
+            btn.setProperty("icon_key", icon_key)
+            is_active = (idx == 0)
+            btn.setObjectName("NavBtnActive" if is_active else "NavBtn")
+            state = "active" if is_active else "inactive"
+            icon_path = get_resource_path(os.path.join("assets", f"nav_{icon_key}_{state}.svg"))
+            if os.path.exists(icon_path):
+                btn.setIcon(QIcon(icon_path))
+                btn.setIconSize(QSize(18, 18))
             btn.setCursor(Qt.CursorShape.PointingHandCursor)
             btn.clicked.connect(lambda _, i=idx: self.switch_tab(i))
             lay.addWidget(btn)
@@ -211,7 +223,6 @@ class DashboardWindow(QWidget):
         self.status_dot_lbl.setStyleSheet("color: #10B981; font-size: 11px;")
         ver_lbl = QLabel("v1.2")
         ver_lbl.setObjectName("VersionLbl")
-        lay.addWidget(self.status_dot_lbl)
         lay.addWidget(ver_lbl)
 
         return sidebar
@@ -253,7 +264,6 @@ class DashboardWindow(QWidget):
             "background: rgba(16,185,129,0.12); border: 1px solid rgba(16,185,129,0.30); "
             "border-radius: 6px; padding: 3px 10px;"
         )
-        hdr.addWidget(self.dash_state_badge)
         lay.addLayout(hdr)
 
         # ── Stats grid 2×2 ──
@@ -1044,36 +1054,220 @@ class DashboardWindow(QWidget):
         self._auto_save_recognition()
 
     def _update_style_ui(self, key):
-        is_dark = self.theme_name == "dark"
-        if is_dark:
-            active_style = (
-                "background: rgba(124,58,237,0.18); border: 1px solid rgba(139,92,246,0.55); "
-                "color: #C4B5FD; font-weight: 700; border-radius: 8px;"
-            )
-            idle_style = (
-                "background: #111120; border: 1px solid #1E1D35; "
-                "color: #7B7AA0; font-weight: 500; border-radius: 8px;"
-            )
-        else:
-            active_style = (
-                "background: rgba(124,58,237,0.12); border: 1px solid rgba(124,58,237,0.35); "
-                "color: #7C3AED; font-weight: 700; border-radius: 8px;"
-            )
-            idle_style = (
-                "background: #FFFFFF; border: 1px solid #E2E0F0; "
-                "color: #6366A0; font-weight: 500; border-radius: 8px;"
-            )
+        active_style = (
+            "background: rgba(223,206,186,0.18); border: 1px solid rgba(245,236,227,0.50); "
+            "color: #F5ECE3; font-weight: 700; border-radius: 8px;"
+        )
+        lay.addStretch()
+
+        outer.addStretch()
+        outer.addWidget(inner)
+        outer.addStretch()
+        self.stack.addWidget(page)
+
+    def _build_recognition_tab(self):
+        page = QWidget()
+        outer = QHBoxLayout(page)
+        outer.setContentsMargins(0, 0, 0, 0)
+
+        # Create QScrollArea with hidden scrollbars
+        self.recognition_scroll = QScrollArea()
+        self.recognition_scroll.setWidgetResizable(True)
+        self.recognition_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.recognition_scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.recognition_scroll.setFrameShape(QFrame.Shape.NoFrame)
+        self.recognition_scroll.setFixedWidth(460)
+        self.recognition_scroll.setStyleSheet("QScrollArea { background: transparent; border: none; }")
+
+        self.recognition_inner = QWidget()
+        self.recognition_inner.setObjectName("RecognitionInnerWidget")
+        self.recognition_inner.setStyleSheet("QWidget#RecognitionInnerWidget { background: transparent; }")
+        lay = QVBoxLayout(self.recognition_inner)
+        lay.setContentsMargins(10, 20, 10, 20)
+        lay.setSpacing(10)
+
+        title = QLabel("Распознавание")
+        title.setObjectName("PageTitle")
+        lay.addWidget(title)
+
+        def toggle_row(parent_layout, title_text, sub_text, toggle_widget):
+            row = QHBoxLayout()
+            row.setSpacing(12)
+            lbl_block = QVBoxLayout()
+            lbl_block.setSpacing(2)
+            t = QLabel(title_text)
+            t.setObjectName("FieldLbl")
+            s = QLabel(sub_text)
+            s.setObjectName("DetailMeta")
+            lbl_block.addWidget(t)
+            lbl_block.addWidget(s)
+            row.addLayout(lbl_block, 1)
+            row.addWidget(toggle_widget)
+            parent_layout.addLayout(row)
+
+        # ── Whisper card ──
+        whisper_card = QFrame()
+        whisper_card.setObjectName("Card")
+        wcl = QVBoxLayout(whisper_card)
+        wcl.setContentsMargins(16, 14, 16, 14)
+        wcl.setSpacing(14)
+
+        whisper_cap = QLabel("WHISPER")
+        whisper_cap.setObjectName("SectionCap")
+        wcl.addWidget(whisper_cap)
+
+        self.raw_whisper_toggle = ToggleSwitch(checked=self.config.get("use_raw_whisper", False))
+        self.raw_whisper_toggle.toggled.connect(self._auto_save_recognition)
+        toggle_row(wcl, "Сырой Whisper",
+                   "Быстрее, но без улучшения качества LLM",
+                   self.raw_whisper_toggle)
+
+        lay.addWidget(whisper_card)
+
+        # ── Фильтрация card ──
+        filter_card = QFrame()
+        filter_card.setObjectName("Card")
+        fcl = QVBoxLayout(filter_card)
+        fcl.setContentsMargins(16, 14, 16, 14)
+        fcl.setSpacing(14)
+
+        filter_cap = QLabel("ФИЛЬТРАЦИЯ")
+        filter_cap.setObjectName("SectionCap")
+        fcl.addWidget(filter_cap)
+
+        self.hallucination_filter_toggle = ToggleSwitch(
+            checked=self.config.get("filter_hallucinations", True)
+        )
+        self.hallucination_filter_toggle.toggled.connect(self._auto_save_recognition)
+        toggle_row(fcl, "Фильтр галлюцинаций",
+                   "Блокировать «Продолжение следует…» и похожие",
+                   self.hallucination_filter_toggle)
+
+        self.min_duration_seg = SegmentedControl(["0.3с", "0.5с", "1с", "Выкл"])
+        dur_map = {0.3: 0, 0.5: 1, 1.0: 2, 0.0: 3}
+        saved_dur = self.config.get("min_recording_duration", 0.5)
+        self.min_duration_seg.setCurrentIndex(dur_map.get(saved_dur, 1))
+        self.min_duration_seg.currentChanged.connect(self._auto_save_recognition)
+
+        dur_cell = QWidget()
+        dur_vl = QVBoxLayout(dur_cell)
+        dur_vl.setContentsMargins(0, 0, 0, 0)
+        dur_vl.setSpacing(6)
+        dur_lbl = QLabel("МИНИМАЛЬНАЯ ДЛИТЕЛЬНОСТЬ ЗАПИСИ")
+        dur_lbl.setObjectName("SectionCap")
+        dur_sub = QLabel("Короче — игнорировать как случайное нажатие")
+        dur_sub.setObjectName("DetailMeta")
+        dur_vl.addWidget(dur_lbl)
+        dur_vl.addWidget(dur_sub)
+        dur_vl.addWidget(self.min_duration_seg)
+        fcl.addWidget(dur_cell)
+
+        lay.addWidget(filter_card)
+
+        # ── Стиль форматирования card ──
+        style_card = QFrame()
+        style_card.setObjectName("Card")
+        scl = QVBoxLayout(style_card)
+        scl.setContentsMargins(16, 14, 16, 14)
+        scl.setSpacing(10)
+        
+        style_cap = QLabel("СТИЛЬ ФОРМАТИРОВАНИЯ")
+        style_cap.setObjectName("SectionCap")
+        scl.addWidget(style_cap)
+        
+        # Grid of buttons for selecting style
+        buttons_widget = QWidget()
+        buttons_lay = QGridLayout(buttons_widget)
+        buttons_lay.setContentsMargins(0, 0, 0, 0)
+        buttons_lay.setSpacing(6)
+        
+        self.style_buttons = {}
+        styles_info = [
+            ("Редактор", "default", 0, 0),
+            ("Чат", "chat", 0, 1),
+            ("Английский", "translate_en", 1, 0),
+            ("Кастом", "custom", 1, 1),
+        ]
+        
+        for name, key, r, c in styles_info:
+            btn = QPushButton(name)
+            btn.setCursor(Qt.CursorShape.PointingHandCursor)
+            btn.setFixedHeight(30)
+            btn.clicked.connect(lambda _, k=key: self._select_style(k))
+            buttons_lay.addWidget(btn, r, c)
+            self.style_buttons[key] = btn
+            
+        scl.addWidget(buttons_widget)
+        
+        # Style details info card (SubCard)
+        self.style_info_card = QFrame()
+        self.style_info_card.setObjectName("SubCard")
+        sil = QVBoxLayout(self.style_info_card)
+        sil.setContentsMargins(12, 10, 12, 10)
+        sil.setSpacing(6)
+        
+        self.style_desc_lbl = QLabel()
+        self.style_desc_lbl.setWordWrap(True)
+        self.style_desc_lbl.setStyleSheet("font-size: 11px; color: #8A8A8A;")
+        
+        self.style_example_lbl = QLabel()
+        self.style_example_lbl.setWordWrap(True)
+        self.style_example_lbl.setStyleSheet("font-size: 12px; font-weight: 500;")
+        
+        sil.addWidget(self.style_desc_lbl)
+        sil.addWidget(self.style_example_lbl)
+        scl.addWidget(self.style_info_card)
+        
+        # Custom instructions field
+        self.custom_style_label = QLabel("ИНСТРУКЦИЯ ДЛЯ КАСТОМНОГО СТИЛЯ:")
+        self.custom_style_label.setObjectName("SectionCap")
+        scl.addWidget(self.custom_style_label)
+        
+        self.custom_style_edit = QPlainTextEdit()
+        self.custom_style_edit.setPlaceholderText("Например: Переведи текст на английский язык или Перепиши текст в деловом стиле.")
+        self.custom_style_edit.setFixedHeight(120)
+        self.custom_style_edit.setPlainText(self.config.get("custom_formatting_style", ""))
+        self.custom_style_edit.textChanged.connect(self._auto_save_recognition)
+        scl.addWidget(self.custom_style_edit)
+        
+        saved_style = self.config.get("formatting_style", "default")
+        self._update_style_ui(saved_style)
+        
+        lay.addWidget(style_card)
+        lay.addStretch()
+
+        self.recognition_scroll.setWidget(self.recognition_inner)
+
+        outer.addStretch()
+        outer.addWidget(self.recognition_scroll)
+        outer.addStretch()
+        self.stack.addWidget(page)
+
+    def _select_style(self, key):
+        self.config["formatting_style"] = key
+        self._update_style_ui(key)
+        self._auto_save_recognition()
+
+    def _update_style_ui(self, key):
+        active_style = (
+            "background: rgba(223,206,186,0.18); border: 1px solid rgba(245,236,227,0.50); "
+            "color: #F5ECE3; font-weight: 700; border-radius: 8px;"
+        )
+        idle_style = (
+            "background: #4E382B; border: 1px solid #7D6454; "
+            "color: #D4C5B9; font-weight: 500; border-radius: 8px;"
+        )
             
         for k, btn in self.style_buttons.items():
             if k == key:
                 btn.setStyleSheet(active_style)
             else:
                 btn.setStyleSheet(idle_style)
-                
+
         info = STYLE_DETAILS.get(key, STYLE_DETAILS["default"])
         self.style_desc_lbl.setText(info["desc"])
         self.style_example_lbl.setText(info["example"])
-        
+
         is_custom = key == "custom"
         self.custom_style_label.setVisible(is_custom)
         self.custom_style_edit.setVisible(is_custom)
@@ -1127,22 +1321,10 @@ class DashboardWindow(QWidget):
             preset = self.config.get("visualizer_color_preset", "mono")
         self.setStyleSheet(get_stylesheet(theme, preset))
 
-        # Update icons based on theme
         icon_name = "p.jpeg"
         icon_path = os.path.join(os.path.dirname(__file__), "..", "assets", icon_name)
         if os.path.exists(icon_path):
             self.setWindowIcon(QIcon(icon_path))
-            # Update sidebar logo
-            sidebar_icon_name = "white_pitch_on_black.jpeg"
-            sidebar_icon_path = os.path.join(os.path.dirname(__file__), "..", "assets", sidebar_icon_name)
-            for i in reversed(range(self.sidebar_layout.count())):
-                widget = self.sidebar_layout.itemAt(i).widget()
-                if widget and widget.objectName() == "SidebarLogo":
-                    logo_pix = QPixmap(sidebar_icon_path).scaled(172, 172,
-                        Qt.AspectRatioMode.KeepAspectRatio,
-                        Qt.TransformationMode.SmoothTransformation)
-                    widget.setPixmap(logo_pix)
-                    break
 
         self.startup_toggle.set_theme(theme)
         self.hotkey_2_enabled_cb.set_theme(theme)
@@ -1182,7 +1364,15 @@ class DashboardWindow(QWidget):
     def switch_tab(self, index):
         self.stack.setCurrentIndex(index)
         for i, btn in enumerate(self.nav_buttons):
-            btn.setObjectName("NavBtnActive" if i == index else "NavBtn")
+            is_active = (i == index)
+            btn.setObjectName("NavBtnActive" if is_active else "NavBtn")
+            icon_key = btn.property("icon_key")
+            if icon_key:
+                state = "active" if is_active else "inactive"
+                icon_path = get_resource_path(os.path.join("assets", f"nav_{icon_key}_{state}.svg"))
+                if os.path.exists(icon_path):
+                    btn.setIcon(QIcon(icon_path))
+                    btn.setIconSize(QSize(18, 18))
         self.apply_theme(self.theme_name)
         if index == 0: self.update_statistics()
         elif index == 2: self.load_history()
@@ -1217,87 +1407,54 @@ class DashboardWindow(QWidget):
 
     def filter_history(self):
         query = self.history_search.text().lower()
-
-        # Remove all cards (keep the trailing stretch)
         while self.history_cards_layout.count() > 1:
             item = self.history_cards_layout.takeAt(0)
-            if item.widget():
-                item.widget().deleteLater()
-
+            if item.widget(): item.widget().deleteLater()
         for idx, entry in enumerate(self.history_entries):
-            raw   = entry.get("raw_text", "")
-            clean = entry.get("cleaned_text", "")
-            if query and query not in raw.lower() and query not in clean.lower():
-                continue
-
+            raw, clean = entry.get("raw_text", ""), entry.get("cleaned_text", "")
+            if query and query not in raw.lower() and query not in clean.lower(): continue
             text = clean or raw
-            snippet = text[:80].replace("\n", " ")
-            if len(text) > 80:
-                snippet += "…"
-            time_str = entry.get("timestamp", "").split()[-1][:5]
-            date_str = entry.get("timestamp", "").split()[0] if " " in entry.get("timestamp", "") else ""
-            lat_str  = f"{entry.get('total_latency', 0):.1f}с"
-            words    = entry.get("word_count", 0)
-
+            snippet = (text[:80].replace("\n", " ") + "…") if len(text) > 80 else text[:80].replace("\n", " ")
+            time_str, date_str = entry.get("timestamp", "").split()[-1][:5], entry.get("timestamp", "").split()[0]
+            lat_str, words = f"{entry.get('total_latency', 0):.1f}с", entry.get("word_count", 0)
             card = QFrame()
             card.setObjectName("RecentItem")
             card.setCursor(Qt.CursorShape.PointingHandCursor)
             cl = QHBoxLayout(card)
             cl.setContentsMargins(12, 10, 12, 10)
             cl.setSpacing(10)
-
             left = QVBoxLayout()
             left.setSpacing(3)
             snip_lbl = ElidedLabel(snippet if snippet else "—")
             snip_lbl.setObjectName("RecentSnippet")
             snip_lbl.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Preferred)
-            # Apply theme-appropriate text color directly via palette
             pal = snip_lbl.palette()
-            text_color = "#F1F3F7" if self.theme_name == "dark" else "#0D0D0D"
-            pal.setColor(QPalette.ColorRole.WindowText, QColor(text_color))
+            pal.setColor(QPalette.ColorRole.WindowText, QColor("#F1F3F7" if self.theme_name == "dark" else "#0D0D0D"))
             snip_lbl.setPalette(pal)
             meta_lbl = QLabel(f"{date_str}  {time_str}  ·  {words} сл.")
             meta_lbl.setObjectName("RecentMeta")
             left.addWidget(snip_lbl)
             left.addWidget(meta_lbl)
-
             right_lbl = QLabel(lat_str)
             right_lbl.setObjectName("HistoryLatency")
             right_lbl.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
             right_lbl.setFixedWidth(44)
-
             cl.addLayout(left, 1)
             cl.addWidget(right_lbl, 0)
-
-            # Capture idx for click handler
             card.mousePressEvent = lambda e, i=idx: self._open_history_entry(i)
-
-            self.history_cards_layout.insertWidget(
-                self.history_cards_layout.count() - 1, card
-            )
+            self.history_cards_layout.insertWidget(self.history_cards_layout.count() - 1, card)
 
     def _open_history_entry(self, idx):
-        """Show detail view for selected history entry"""
         if idx is not None and idx < len(self.history_entries):
             e = self.history_entries[idx]
             self.txt_raw.setPlainText(e.get("raw_text", ""))
             self.txt_clean.setPlainText(e.get("cleaned_text", ""))
-            self.detail_meta.setText(
-                f"{e.get('timestamp','')}  ·  {e.get('total_latency',0):.1f}с  ·  {e.get('model','')}"
-            )
+            self.detail_meta.setText(f"{e.get('timestamp','')}  ·  {e.get('total_latency',0):.1f}с  ·  {e.get('model','')}")
             self.history_stack.setCurrentIndex(1)
 
-    def show_history_detail(self, item):
-        """Legacy — kept for compatibility, not used with card layout"""
-        pass
-
-    def hide_history_detail(self):
-        """Return to history list view"""
-        self.history_stack.setCurrentIndex(0)
-
-    def copy_raw_text(self):   QApplication.clipboard().setText(self.txt_raw.toPlainText())
+    def hide_history_detail(self): self.history_stack.setCurrentIndex(0)
+    def copy_raw_text(self): QApplication.clipboard().setText(self.txt_raw.toPlainText())
     def copy_clean_text(self): QApplication.clipboard().setText(self.txt_clean.toPlainText())
-
     def clear_all_history(self):
         history_manager.clear_history()
         self.load_history()
@@ -1309,19 +1466,13 @@ class DashboardWindow(QWidget):
         self.val_lat.setText(f"{stats['avg_total_latency']:.1f} с")
         self.val_words.setText(str(stats["total_words"]))
         self.val_chars.setText(str(stats["total_chars"]))
-
-        # Update hotkey badge
         self._update_hotkey_badge()
-
-        # Update recent dictations
         entries = history_manager.load_history()[:3]
         for i, (snippet_lbl, ts_lbl, right_lbl) in enumerate(self.recent_items):
             if i < len(entries):
                 e = entries[i]
                 text = e.get("cleaned_text") or e.get("raw_text", "")
-                short = text[:55].replace("\n", " ")
-                if len(text) > 55:
-                    short += "…"
+                short = (text[:55].replace("\n", " ") + "…") if len(text) > 55 else text[:55].replace("\n", " ")
                 snippet_lbl.setText(short if short else "—")
                 ts_lbl.setText(e.get("timestamp", "").split()[-1][:5])
                 right_lbl.setText(f"{e.get('total_latency', 0):.1f}с")
@@ -1344,8 +1495,14 @@ class DashboardWindow(QWidget):
             self.hide()
 
     def showEvent(self, event):
-        """Apply native rounded corners via DWM on every show."""
         super().showEvent(event)
-        # Re-apply DWM corners every time window becomes visible
-        # Windows can lose corner preference after hide/show cycles
-        _apply_dwm_rounded_corners(self.winId())
+
+    def paintEvent(self, event):
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+        rect = QRectF(self.rect())
+        rect.adjust(0.5, 0.5, -0.5, -0.5)
+        painter.setBrush(QBrush(QColor("#DFCEBA")))
+        painter.setPen(QPen(QColor("#7D6454"), 1.0))
+        painter.drawRoundedRect(rect, 20.0, 20.0)
+        painter.end()

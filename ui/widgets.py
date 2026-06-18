@@ -14,8 +14,8 @@ class ToggleSwitch(QWidget):
     toggled = pyqtSignal(bool)
 
     # Indigo/violet accent palette matching the redesigned theme
-    _COL_ON   = QColor(124, 58, 237)   # indigo-600
-    _COL_OFF  = QColor(30, 28, 50)     # dark surface
+    _COL_ON   = QColor(223, 206, 186)   # sand
+    _COL_OFF  = QColor(78, 56, 43)      # dark chocolate
 
     def __init__(self, parent=None, checked=False):
         super().__init__(parent)
@@ -104,14 +104,14 @@ class SegmentedControl(QWidget):
     def set_accent(self, primary_hex): pass
 
     def _update_styles(self):
-        active_bg   = "rgba(124,58,237,0.18)"
-        active_bdr  = "rgba(139,92,246,0.55)"
-        active_txt  = "#C4B5FD"          # violet-300
-        idle_bg     = "#111120"
-        idle_bdr    = "#1E1D35"
-        idle_txt    = "#7B7AA0"
-        hover_bg    = "#17162A"
-        hover_txt   = "#E8E6FF"
+        active_bg   = "rgba(223,206,186,0.18)"
+        active_bdr  = "rgba(245,236,227,0.50)"
+        active_txt  = "#F5ECE3"
+        idle_bg     = "#4E382B"
+        idle_bdr    = "#7D6454"
+        idle_txt    = "#D4C5B9"
+        hover_bg    = "#5A4234"
+        hover_txt   = "#F5ECE3"
 
         for i, btn in enumerate(self._buttons):
             if i == self._current:
@@ -181,11 +181,11 @@ class ColorPresetSelector(QWidget):
             grad.setColorAt(1.0, QColor(c3.red(), c3.green(), c3.blue(), 180))
             p.setBrush(QBrush(grad))
             if key == self._current:
-                p.setPen(QPen(QColor(139, 92, 246), 2.5))  # violet-500 selection ring
+                p.setPen(QPen(QColor(245, 236, 227), 2.5))  # active sand selection ring
             else:
-                p.setPen(QPen(QColor(30, 29, 53), 1))
+                p.setPen(QPen(QColor(78, 56, 43), 1))
             p.drawEllipse(QPointF(cx, cy), r, r)
-            p.setPen(QPen(QColor(138, 138, 138)))
+            p.setPen(QPen(QColor(212, 197, 185)))
             font = QFont("Arial", 8)
             p.setFont(font)
             name = preset["name"]

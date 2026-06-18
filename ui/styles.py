@@ -29,31 +29,34 @@ def _lerp_color(c1, c2, t):
 
 def get_stylesheet(theme="dark", preset_key="mono"):
     """Generate stylesheet based on theme (always dark)."""
-    bg          = "#080812"
-    sidebar     = "#0E0E1A"
-    surface     = "#111120"
-    surface2    = "#161628"
-    text        = "#E8E6FF"
-    muted       = "#7B7AA0"
-    faint       = "#4A4870"
-    border      = "#1E1D35"
-    nav_hover   = "#17162A"
-    selected    = "#1E1B4B"
-    console     = "#0E0E1A"
-    input_bg    = "#111120"
-    primary     = "#7C3AED"
-    hover       = "#8B5CF6"
-    accent_glow = "rgba(124,58,237,0.15)"
-    seg_act_bg  = "rgba(124,58,237,0.18)"
-    seg_act_bdr = "rgba(139,92,246,0.50)"
-    seg_act_txt = "#C4B5FD"
-    badge_bg    = "rgba(124,58,237,0.15)"
-    badge_bdr   = "rgba(139,92,246,0.40)"
+    bg          = "#DFCEBA"
+    sidebar     = "#DFCEBA"
+    content_bg  = "#6D5141"
+    surface     = "#5A4234"
+    surface2    = "#4E382B"
+    text        = "#F5ECE3"
+    muted       = "#D4C5B9"
+    faint       = "#968375"
+    border      = "#7D6454"
+    nav_hover   = "#E5D7C6"
+    selected    = "#F5ECE3"
+    console     = "#4E382B"
+    input_bg    = "#4E382B"
+    primary     = "#DFCEBA"
+    hover       = "#F5ECE3"
+    accent_glow = "rgba(223,206,186,0.15)"
+    seg_act_bg  = "rgba(223,206,186,0.18)"
+    seg_act_bdr = "rgba(245,236,227,0.50)"
+    seg_act_txt = "#F5ECE3"
+    badge_bg    = "rgba(223,206,186,0.15)"
+    badge_bdr   = "rgba(245,236,227,0.40)"
 
     return f"""
         /* ── Global ── */
         QWidget#DashboardWindow {{
             background-color: {bg};
+            border-radius: 20px;
+            border: 1px solid #7D6454;
         }}
         QWidget {{
             font-family: "Inter", "Segoe UI Variable", "Segoe UI", "SF Pro Display", sans-serif;
@@ -64,18 +67,23 @@ def get_stylesheet(theme="dark", preset_key="mono"):
         /* ── Title Bar ── */
         QFrame#TitleBar {{
             background-color: {sidebar};
-            border-bottom: 1px solid {border};
+            border-bottom: none;
+            border-top-left-radius: 20px;
+            border-top-right-radius: 20px;
+        }}
+        QFrame#TitleBar QWidget {{
+            color: #281B15;
         }}
         QLabel#TitleBarLabel {{
             font-size: 11px;
             font-weight: 600;
-            color: {muted};
+            color: #4E382B;
             letter-spacing: 1px;
             background: transparent;
         }}
         QPushButton#TitleBtn {{
             background: transparent;
-            color: {muted};
+            color: #4E382B;
             border: none;
             font-size: 13px;
             font-weight: 400;
@@ -83,11 +91,11 @@ def get_stylesheet(theme="dark", preset_key="mono"):
         }}
         QPushButton#TitleBtn:hover {{
             background: {nav_hover};
-            color: {text};
+            color: #281B15;
         }}
         QPushButton#TitleBtnClose {{
             background: transparent;
-            color: {muted};
+            color: #4E382B;
             border: none;
             font-size: 13px;
             font-weight: 400;
@@ -96,64 +104,86 @@ def get_stylesheet(theme="dark", preset_key="mono"):
         QPushButton#TitleBtnClose:hover {{
             background: #DC2626;
             color: #FFFFFF;
+            border-top-right-radius: 20px;
         }}
 
         /* ── Sidebar ── */
         QFrame#Sidebar {{
             background-color: {sidebar};
-            border-right: 1px solid {border};
+            border-right: none;
+            border-bottom-left-radius: 20px;
+        }}
+        QFrame#Sidebar QWidget {{
+            color: #281B15;
         }}
         QLabel {{ color: {text}; background: transparent; }}
 
         /* Logo text */
         QLabel#AppName {{
-            font-size: 16px;
-            font-weight: 800;
-            color: {text};
-            letter-spacing: 2px;
+            font-family: "Pacifico", "Brush Script MT", "Great Vibes", "Lucida Handwriting", "Segoe Script", cursive;
+            font-size: 46px;
+            font-weight: bold;
+            color: #281B15;
+            margin-bottom: 4px;
         }}
         QLabel#AppSub {{
             font-size: 10px;
-            color: {faint};
+            color: #7D6454;
             letter-spacing: 0.5px;
         }}
 
-        /* Nav buttons */
         QPushButton#NavBtn {{
             text-align: left;
             padding: 9px 14px;
-            border-radius: 8px;
+            border-radius: 16px;
             font-size: 13px;
             font-weight: 500;
             border: none;
             background: transparent;
-            color: {muted};
+            color: #4E382B;
         }}
         QPushButton#NavBtn:hover {{
             background: {nav_hover};
-            color: {text};
+            color: #281B15;
         }}
         QPushButton#NavBtnActive {{
             text-align: left;
             padding: 9px 14px;
-            border-radius: 8px;
+            border-radius: 16px;
             font-size: 13px;
             font-weight: 600;
             border: none;
             background: {selected};
-            color: {text};
+            color: #281B15;
         }}
 
         /* Status/version */
         QLabel#StatusDot {{
             font-size: 11px;
-            color: {muted};
+            color: #4E382B;
         }}
         QLabel#VersionLbl {{
             font-size: 10px;
-            color: {faint};
+            color: #7D6454;
             letter-spacing: 0.5px;
         }}
+
+        /* ── Main Content Container ── */
+        QFrame#MainContentContainer {{
+            background-color: {content_bg};
+            border-top-left-radius: 24px;
+            border-bottom-left-radius: 24px;
+            border-top-right-radius: 24px;
+            border-bottom-right-radius: 24px;
+            border: none;
+        }}
+        QStackedWidget {{
+            background: transparent;
+        }}
+        QStackedWidget > QWidget {{
+            background: transparent;
+        }}
+
 
         /* ── Content area ── */
         QLabel#PageTitle {{
@@ -234,13 +264,13 @@ def get_stylesheet(theme="dark", preset_key="mono"):
             border-radius: 9px;
             border: none;
             background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
-                stop:0 #7C3AED, stop:1 #3B82F6);
-            color: #FFFFFF;
+                stop:0 #DFCEBA, stop:1 #F5ECE3);
+            color: #281B15;
             letter-spacing: 0.3px;
         }}
         QPushButton#PrimaryBtn:hover {{
             background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
-                stop:0 #6D28D9, stop:1 #2563EB);
+                stop:0 #E5D7C6, stop:1 #FFFFFF);
         }}
         QPushButton#PrimaryBtn:disabled {{
             background: {border};
@@ -282,7 +312,7 @@ def get_stylesheet(theme="dark", preset_key="mono"):
 
         /* History cards container */
         QWidget#HistoryCardsWidget {{
-            background: {bg};
+            background: transparent;
         }}
 
         /* Hide horizontal scrollbar */
@@ -412,7 +442,7 @@ def get_stylesheet(theme="dark", preset_key="mono"):
         }}
         QSlider::sub-page:horizontal {{
             background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
-                stop:0 #7C3AED, stop:1 #3B82F6);
+                stop:0 #DFCEBA, stop:1 #F5ECE3);
             border-radius: 2px;
         }}
 
