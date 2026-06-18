@@ -6,7 +6,10 @@ from PyQt6.QtWidgets import (
     QLineEdit, QStackedWidget, QFrame, QApplication,
     QSizePolicy,
 )
-from PyQt6.QtCore import Qt, QRectF, QPoint, QSize, pyqtSignal
+from PyQt6.QtCore import (
+    Qt, QRectF, QRect, QPoint, QSize, pyqtSignal,
+    QPropertyAnimation, QParallelAnimationGroup, QEasingCurve, QEvent
+)
 from PyQt6.QtGui import QPainter, QPen, QBrush, QIcon, QColor
 
 from ..styles import get_stylesheet, get_resource_path
@@ -44,7 +47,7 @@ class TitleBar(QFrame):
         self._btn_min.setObjectName("TitleBtn")
         self._btn_min.setFixedSize(36, 24)
         self._btn_min.setCursor(Qt.CursorShape.ArrowCursor)
-        self._btn_min.clicked.connect(parent_window.showMinimized)
+        self._btn_min.clicked.connect(parent_window.animate_minimize)
         lay.addWidget(self._btn_min)
 
         self._btn_close = QPushButton("✕")
@@ -69,6 +72,7 @@ class TitleBar(QFrame):
 
     def mouseReleaseEvent(self, event):
         self._win._dragging = False
+        self._win._normal_pos = self._win.pos()
 
 
 class DashboardWindow(QWidget):
@@ -84,6 +88,13 @@ class DashboardWindow(QWidget):
         self.save_callback = save_callback
         self.theme_name = self.config.get("theme", "dark")
         self.history_entries = []
+        
+        self._normal_pos = None
+        self._is_animating_show = False
+        self._is_animating_minimize = False
+        self._is_animating_restore = False
+        self._is_animating_close = False
+        
         self._init_ui()
         self.apply_theme(self.theme_name)
         self.load_history()
@@ -324,13 +335,176 @@ class DashboardWindow(QWidget):
 
     # --- Qt events ---
 
-    def closeEvent(self, event):
-        if event.spontaneous():
-            event.ignore()
+    # --- Custom Animations ---
+
+    def animate_show(self):
+        if self._is_animating_show:
+            return
+        self._is_animating_show = True
+
+        pos = self._normal_pos if self._normal_pos is not None else self.pos()
+        geom = self.geometry()
+        normal_geom = QRect(pos.x(), pos.y(), geom.width(), geom.height())
+        start_geom = self.geometry()
+
+        self._show_anim_group = QParallelAnimationGroup()
+
+        self._show_opacity_anim = QPropertyAnimation(self, b"windowOpacity")
+        self._show_opacity_anim.setDuration(200)
+        self._show_opacity_anim.setStartValue(0.0)
+        self._show_opacity_anim.setEndValue(1.0)
+        self._show_opacity_anim.setEasingCurve(QEasingCurve.Type.OutCubic)
+        self._show_anim_group.addAnimation(self._show_opacity_anim)
+
+        self._show_geom_anim = QPropertyAnimation(self, b"geometry")
+        self._show_geom_anim.setDuration(200)
+        self._show_geom_anim.setStartValue(start_geom)
+        self._show_geom_anim.setEndValue(normal_geom)
+        self._show_geom_anim.setEasingCurve(QEasingCurve.Type.OutCubic)
+        self._show_anim_group.addAnimation(self._show_geom_anim)
+
+        def on_finished():
+            self._is_animating_show = False
+            self.setWindowOpacity(1.0)
+            self.setGeometry(normal_geom)
+
+        self._show_anim_group.finished.connect(on_finished)
+        self._show_anim_group.start()
+
+    def animate_minimize(self):
+        if self._is_animating_minimize:
+            return
+        self._is_animating_minimize = True
+
+        self._normal_pos = self.pos()
+
+        self._min_anim_group = QParallelAnimationGroup()
+
+        self._min_opacity_anim = QPropertyAnimation(self, b"windowOpacity")
+        self._min_opacity_anim.setDuration(200)
+        self._min_opacity_anim.setStartValue(1.0)
+        self._min_opacity_anim.setEndValue(0.0)
+        self._min_opacity_anim.setEasingCurve(QEasingCurve.Type.OutCubic)
+        self._min_anim_group.addAnimation(self._min_opacity_anim)
+
+        self._min_geom_anim = QPropertyAnimation(self, b"geometry")
+        self._min_geom_anim.setDuration(200)
+        geom = self.geometry()
+        target_geom = QRect(geom.x(), geom.y() + 40, geom.width(), geom.height())
+        self._min_geom_anim.setStartValue(geom)
+        self._min_geom_anim.setEndValue(target_geom)
+        self._min_geom_anim.setEasingCurve(QEasingCurve.Type.OutCubic)
+        self._min_anim_group.addAnimation(self._min_geom_anim)
+
+        def on_finished():
+            self.showMinimized()
+            self._is_animating_minimize = False
+
+        self._min_anim_group.finished.connect(on_finished)
+        self._min_anim_group.start()
+
+    def animate_restore(self):
+        if self._is_animating_restore:
+            return
+        self._is_animating_restore = True
+
+        pos = self._normal_pos if self._normal_pos is not None else self.pos()
+        geom = self.geometry()
+        normal_geom = QRect(pos.x(), pos.y(), geom.width(), geom.height())
+        start_geom = QRect(pos.x(), pos.y() + 40, geom.width(), geom.height())
+
+        self.setGeometry(start_geom)
+        self.setWindowOpacity(0.0)
+
+        self._restore_anim_group = QParallelAnimationGroup()
+
+        self._restore_opacity_anim = QPropertyAnimation(self, b"windowOpacity")
+        self._restore_opacity_anim.setDuration(250)
+        self._restore_opacity_anim.setStartValue(0.0)
+        self._restore_opacity_anim.setEndValue(1.0)
+        self._restore_opacity_anim.setEasingCurve(QEasingCurve.Type.OutCubic)
+        self._restore_anim_group.addAnimation(self._restore_opacity_anim)
+
+        self._restore_geom_anim = QPropertyAnimation(self, b"geometry")
+        self._restore_geom_anim.setDuration(250)
+        self._restore_geom_anim.setStartValue(start_geom)
+        self._restore_geom_anim.setEndValue(normal_geom)
+        self._restore_geom_anim.setEasingCurve(QEasingCurve.Type.OutCubic)
+        self._restore_anim_group.addAnimation(self._restore_geom_anim)
+
+        def on_finished():
+            self._is_animating_restore = False
+            self.setWindowOpacity(1.0)
+            self.setGeometry(normal_geom)
+
+        self._restore_anim_group.finished.connect(on_finished)
+        self._restore_anim_group.start()
+
+    def animate_close(self):
+        if self._is_animating_close:
+            return
+        self._is_animating_close = True
+
+        self._close_anim_group = QParallelAnimationGroup()
+
+        self._close_opacity_anim = QPropertyAnimation(self, b"windowOpacity")
+        self._close_opacity_anim.setDuration(200)
+        self._close_opacity_anim.setStartValue(1.0)
+        self._close_opacity_anim.setEndValue(0.0)
+        self._close_opacity_anim.setEasingCurve(QEasingCurve.Type.OutCubic)
+        self._close_anim_group.addAnimation(self._close_opacity_anim)
+
+        self._close_geom_anim = QPropertyAnimation(self, b"geometry")
+        self._close_geom_anim.setDuration(200)
+        geom = self.geometry()
+        target_geom = QRect(geom.x(), geom.y() + 20, geom.width(), geom.height())
+        self._close_geom_anim.setStartValue(geom)
+        self._close_geom_anim.setEndValue(target_geom)
+        self._close_geom_anim.setEasingCurve(QEasingCurve.Type.OutCubic)
+        self._close_anim_group.addAnimation(self._close_geom_anim)
+
+        def on_finished():
             self.hide()
+            self.setWindowOpacity(1.0)
+            if self._normal_pos is not None:
+                self.setGeometry(QRect(self._normal_pos.x(), self._normal_pos.y(), geom.width(), geom.height()))
+            else:
+                self.setGeometry(geom)
+            self._is_animating_close = False
+
+        self._close_anim_group.finished.connect(on_finished)
+        self._close_anim_group.start()
+
+    # --- Qt events ---
+
+    def changeEvent(self, event):
+        if event.type() == QEvent.Type.WindowStateChange:
+            if not self.isMinimized() and self._normal_pos is not None:
+                self.animate_restore()
+        super().changeEvent(event)
+
+    def closeEvent(self, event):
+        if self._is_animating_close:
+            event.accept()
+            return
+        event.ignore()
+        self.animate_close()
 
     def showEvent(self, event):
+        if not self._is_animating_show and not self._is_animating_restore and not self._is_animating_close:
+            if self._normal_pos is None:
+                self._normal_pos = self.pos()
+            
+            pos = self._normal_pos
+            geom = self.geometry()
+            start_geom = QRect(pos.x(), pos.y() + 20, geom.width(), geom.height())
+            self.setGeometry(start_geom)
+            self.setWindowOpacity(0.0)
+
         super().showEvent(event)
+        
+        if not self._is_animating_show and not self._is_animating_restore and not self._is_animating_close:
+            self.animate_show()
 
     def paintEvent(self, event):
         painter = QPainter(self)
