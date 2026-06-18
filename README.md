@@ -37,6 +37,6 @@ python main.py
 Сборка автономного исполняемого файла с помощью PyInstaller:
 ```powershell
 pip install pyinstaller
-pyinstaller --noconsole --onefile --name="PITCH" --icon=icon.ico --add-data "assets/p.jpeg;assets" --add-data "assets/white_pitch_on_black.jpeg;assets" main.py
+pyinstaller --noconsole --onefile --name="PITCH" --icon=icon.ico --add-data "assets/p.jpeg;assets" main.py
 ```
 Исполняемый файл `PITCH.exe` будет сохранен в папке `dist/`.

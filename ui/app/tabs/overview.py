@@ -1,6 +1,6 @@
 """Overview tab: statistics cards, hotkey badge, recent dictations list."""
 from PyQt6.QtWidgets import (
-    QWidget, QVBoxLayout, QHBoxLayout, QLabel, QFrame, QGridLayout, QSizePolicy
+    QWidget, QVBoxLayout, QHBoxLayout, QLabel, QFrame, QGridLayout
 )
 from PyQt6.QtCore import Qt
 
@@ -24,9 +24,6 @@ def build_overview_tab(d) -> QWidget:
     title.setObjectName("PageTitle")
     hdr.addWidget(title)
     hdr.addStretch()
-    d.dash_state_badge = QLabel("Готов")
-    d.dash_state_badge.setObjectName("StateBadge")
-    hdr.addWidget(d.dash_state_badge)
     lay.addLayout(hdr)
 
     stats_grid = QGridLayout()

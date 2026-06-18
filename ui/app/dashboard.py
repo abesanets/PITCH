@@ -31,7 +31,7 @@ class TitleBar(QFrame):
     def __init__(self, parent_window):
         super().__init__()
         self.setObjectName("TitleBar")
-        self.setFixedHeight(28)
+        self.setFixedHeight(24)
         self._win = parent_window
 
         from PyQt6.QtWidgets import QPushButton
@@ -42,14 +42,14 @@ class TitleBar(QFrame):
 
         self._btn_min = QPushButton("─")
         self._btn_min.setObjectName("TitleBtn")
-        self._btn_min.setFixedSize(36, 28)
+        self._btn_min.setFixedSize(36, 24)
         self._btn_min.setCursor(Qt.CursorShape.ArrowCursor)
         self._btn_min.clicked.connect(parent_window.showMinimized)
         lay.addWidget(self._btn_min)
 
         self._btn_close = QPushButton("✕")
         self._btn_close.setObjectName("TitleBtnClose")
-        self._btn_close.setFixedSize(36, 28)
+        self._btn_close.setFixedSize(36, 24)
         self._btn_close.setCursor(Qt.CursorShape.ArrowCursor)
         self._btn_close.clicked.connect(parent_window.close)
         lay.addWidget(self._btn_close)
@@ -91,7 +91,7 @@ class DashboardWindow(QWidget):
 
     def _init_ui(self):
         self.setWindowTitle("PITCH")
-        self.setFixedSize(760, 620)
+        self.setFixedSize(730, 600)
         self.setWindowFlags(Qt.WindowType.FramelessWindowHint)
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, True)
 
@@ -112,14 +112,14 @@ class DashboardWindow(QWidget):
         self.main_container = QFrame()
         self.main_container.setObjectName("MainContentContainer")
         container_layout = QVBoxLayout(self.main_container)
-        container_layout.setContentsMargins(12, 12, 12, 12)
+        container_layout.setContentsMargins(12, 8, 12, 12)
 
         self.stack = QStackedWidget()
         container_layout.addWidget(self.stack)
 
         wrapper = QWidget()
         wrapper_layout = QVBoxLayout(wrapper)
-        wrapper_layout.setContentsMargins(12, 12, 12, 12)
+        wrapper_layout.setContentsMargins(12, 6, 12, 12)
         wrapper_layout.setSpacing(0)
         wrapper_layout.addWidget(self.main_container)
         root.addWidget(wrapper)
@@ -145,17 +145,17 @@ class DashboardWindow(QWidget):
         from PyQt6.QtWidgets import QPushButton
         sidebar = QFrame()
         sidebar.setObjectName("Sidebar")
-        sidebar.setFixedWidth(210)
+        sidebar.setFixedWidth(180)
 
         lay = QVBoxLayout(sidebar)
-        lay.setContentsMargins(14, 20, 14, 16)
+        lay.setContentsMargins(10, 12, 10, 16)
         lay.setSpacing(2)
         self.sidebar_layout = lay
 
         logo_lbl = QLabel("Pitch")
         logo_lbl.setObjectName("AppName")
         logo_lbl.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
-        logo_lbl.setContentsMargins(10, 10, 0, 10)
+        logo_lbl.setContentsMargins(6, 10, 0, 10)
         lay.addWidget(logo_lbl)
         lay.addSpacing(8)
 
@@ -168,12 +168,11 @@ class DashboardWindow(QWidget):
             ("Распознавание", 4, "predict"),
         ]
         for label, idx, icon_key in nav_items:
-            btn = QPushButton("  " + label)
+            btn = QPushButton(" " + label)
             btn.setProperty("icon_key", icon_key)
             is_active = (idx == 0)
             btn.setObjectName("NavBtnActive" if is_active else "NavBtn")
-            state = "active" if is_active else "inactive"
-            icon_path = get_resource_path(os.path.join("assets", f"nav_{icon_key}_{state}.svg"))
+            icon_path = get_resource_path(os.path.join("assets", f"nav_{icon_key}_active.svg"))
             if os.path.exists(icon_path):
                 btn.setIcon(QIcon(icon_path))
                 btn.setIconSize(QSize(18, 18))
@@ -184,10 +183,6 @@ class DashboardWindow(QWidget):
 
         lay.addStretch()
 
-        self.status_dot_lbl = QLabel("Готов")
-        self.status_dot_lbl.setObjectName("StatusDot")
-        self.status_dot_lbl.setStyleSheet("color: #10B981; font-size: 11px;")
-        lay.addWidget(self.status_dot_lbl)
 
         ver_lbl = QLabel("v1.2")
         ver_lbl.setObjectName("VersionLbl")
@@ -314,38 +309,14 @@ class DashboardWindow(QWidget):
 
         self._update_style_ui(self.config.get("formatting_style", "default"))
 
-    def set_system_state(self, state):
-        states = {
-            "idle":       ("#10B981", "rgba(16,185,129,0.12)", "rgba(16,185,129,0.30)", "Готов"),
-            "recording":  ("#38BDF8", "rgba(56,189,248,0.12)", "rgba(56,189,248,0.30)", "Запись"),
-            "processing": ("#A78BFA", "rgba(167,139,250,0.12)", "rgba(167,139,250,0.30)", "Обработка"),
-        }
-        color, bg, bdr, text = states.get(state, states["idle"])
-        badge_style = (
-            f"color: {color}; font-size: 12px; font-weight: 700; "
-            f"background: {bg}; border: 1px solid {bdr}; "
-            f"border-radius: 6px; padding: 3px 10px;"
-        )
-        self.status_dot_lbl.setText(text)
-        self.status_dot_lbl.setStyleSheet(f"color: {color}; font-size: 11px;")
-        self.dash_state_badge.setText(text)
-        self.dash_state_badge.setStyleSheet(badge_style)
 
     def switch_tab(self, index):
         self.stack.setCurrentIndex(index)
         for i, btn in enumerate(self.nav_buttons):
             is_active = (i == index)
             btn.setObjectName("NavBtnActive" if is_active else "NavBtn")
-            icon_key = btn.property("icon_key")
-            if icon_key:
-                state = "active" if is_active else "inactive"
-                icon_path = get_resource_path(
-                    os.path.join("assets", f"nav_{icon_key}_{state}.svg")
-                )
-                if os.path.exists(icon_path):
-                    btn.setIcon(QIcon(icon_path))
-                    btn.setIconSize(QSize(18, 18))
-        self.apply_theme(self.theme_name)
+            btn.style().unpolish(btn)
+            btn.style().polish(btn)
         if index == 0:
             self.update_statistics()
         elif index == 2:

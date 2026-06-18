@@ -44,16 +44,7 @@ class VoiceAssistant:
     def setup_signals(self):
         self.core.volume_changed.connect(self.overlay.set_volume)
         self.core.state_changed.connect(self.overlay.set_state)
-        self.core.state_changed.connect(self.on_state_changed)
         self.core.processing_done.connect(self.on_processing_done)
-        self.core.log_message.connect(self.on_log_message)
-
-    def on_state_changed(self, state):
-        if self.dashboard is not None and self.dashboard.isVisible():
-            try:
-                self.dashboard.set_system_state(state)
-            except Exception:
-                pass
 
     def setup_tray(self):
         self.tray = QSystemTrayIcon()
@@ -94,7 +85,6 @@ class VoiceAssistant:
     def show_settings(self):
         if self.dashboard is None:
             self.dashboard = DashboardWindow(self.config, self.on_settings_saved)
-            self.dashboard.set_system_state(self.overlay.state)
             # Connect restart signal
             self.dashboard.restart_requested.connect(self.restart_app)
         self.dashboard.show()
@@ -119,12 +109,6 @@ class VoiceAssistant:
             import threading
             threading.Thread(target=self.core._get_groq_client, daemon=True).start()
 
-    def on_log_message(self, message):
-        if self.dashboard is not None and self.dashboard.isVisible():
-            try:
-                self.dashboard.append_log(message)
-            except Exception:
-                pass
 
     def on_processing_done(self, text):
         if text and not text.startswith("Error:"):

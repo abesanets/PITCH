@@ -16,7 +16,6 @@ class PitchCore(QObject):
     volume_changed = pyqtSignal(float)
     state_changed = pyqtSignal(str)
     processing_done = pyqtSignal(str)
-    log_message = pyqtSignal(str)
 
     def __init__(
         self,

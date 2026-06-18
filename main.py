@@ -35,7 +35,7 @@ def main():
     )
 
     log_path  = os.path.join(os.path.dirname(__file__), "pitch.log")
-    redirector = LogRedirector(core.log_message, log_path)
+    redirector = LogRedirector(log_path)
     sys.stdout = redirector
     sys.stderr = redirector
 

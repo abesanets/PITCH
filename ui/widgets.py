@@ -1,9 +1,7 @@
 """Custom UI widgets for VoiceAssistant"""
-import math
-from PyQt6.QtWidgets import (QWidget, QPushButton, QHBoxLayout, QColorDialog, QSizePolicy, 
-                             QVBoxLayout, QLabel, QFrame, QGridLayout, QDialog)
-from PyQt6.QtCore import Qt, QTimer, QRectF, QPropertyAnimation, QEasingCurve, pyqtProperty, pyqtSignal, QPointF
-from PyQt6.QtGui import QPainter, QColor, QPen, QBrush, QFont, QLinearGradient
+from PyQt6.QtWidgets import QWidget, QPushButton, QHBoxLayout, QSizePolicy
+from PyQt6.QtCore import Qt, QRectF, QPropertyAnimation, QEasingCurve, pyqtProperty, pyqtSignal, QPointF
+from PyQt6.QtGui import QPainter, QColor, QPen, QBrush, QLinearGradient
 
 from .styles import _lerp_color
 from .styles_data import VISUALIZER_PRESETS

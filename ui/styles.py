@@ -1,7 +1,6 @@
 import os
 import sys
 from PyQt6.QtGui import QColor
-from .styles_data import ACCENT_PRESETS
 
 def get_resource_path(relative_path):
     """Get absolute path to resource, works for dev and for PyInstaller."""
@@ -10,11 +9,6 @@ def get_resource_path(relative_path):
     except Exception:
         base_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     return os.path.join(base_path, relative_path)
-
-# Fixed accent palette — indigo/violet for premium look
-UI_PRIMARY  = "#7C3AED"
-UI_HOVER    = "#6D28D9"
-UI_SELECTED = "#1E1B4B"
 
 
 def _lerp_color(c1, c2, t):
@@ -134,34 +128,26 @@ def get_stylesheet(theme="dark", preset_key="mono"):
 
         QPushButton#NavBtn {{
             text-align: left;
-            padding: 9px 14px;
-            border-radius: 16px;
-            font-size: 13px;
-            font-weight: 500;
-            border: none;
-            background: transparent;
-            color: #4E382B;
-        }}
-        QPushButton#NavBtn:hover {{
-            background: {nav_hover};
-            color: #281B15;
-        }}
-        QPushButton#NavBtnActive {{
-            text-align: left;
-            padding: 9px 14px;
+            padding: 9px 10px;
             border-radius: 16px;
             font-size: 13px;
             font-weight: 600;
             border: none;
-            background: {selected};
+            background: transparent;
+            color: #281B15;
+        }}
+        QPushButton#NavBtnActive {{
+            text-align: left;
+            padding: 9px 10px;
+            border-radius: 16px;
+            font-size: 13px;
+            font-weight: 600;
+            border: none;
+            background: rgba(78, 56, 43, 0.15);
             color: #281B15;
         }}
 
         /* Status/version */
-        QLabel#StatusDot {{
-            font-size: 11px;
-            color: #4E382B;
-        }}
         QLabel#VersionLbl {{
             font-size: 10px;
             color: #7D6454;
@@ -396,16 +382,6 @@ def get_stylesheet(theme="dark", preset_key="mono"):
             font-size: 12px;
             font-weight: 700;
             color: {primary};
-        }}
-
-        /* State badge in Overview header */
-        QLabel#StateBadge {{
-            font-size: 11px;
-            font-weight: 800;
-            color: #10B981;
-            background: rgba(16,185,129,0.15);
-            border-radius: 4px;
-            padding: 2px 8px;
         }}
 
         /* Style description / example labels in Recognition tab */
