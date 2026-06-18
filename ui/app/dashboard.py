@@ -10,7 +10,7 @@ from PyQt6.QtCore import (
     Qt, QRectF, QRect, QPoint, QSize, pyqtSignal,
     QPropertyAnimation, QParallelAnimationGroup, QEasingCurve, QEvent
 )
-from PyQt6.QtGui import QPainter, QPen, QBrush, QIcon, QColor
+from PyQt6.QtGui import QPainter, QPen, QBrush, QIcon, QColor, QFont
 
 from ..styles import get_stylesheet, get_resource_path
 from .tabs.overview    import build_overview_tab, update_statistics
@@ -26,7 +26,7 @@ from .tabs.settings    import (
 from .tabs.recognition import (
     build_recognition_tab, update_style_ui, auto_save_recognition,
 )
-from ..widgets import ToggleSwitch
+from ..widgets import ToggleSwitch, OutlinedLabel
 
 
 class TitleBar(QFrame):
@@ -145,7 +145,7 @@ class DashboardWindow(QWidget):
 
         self._update_style_ui(self.config.get("formatting_style", "default"))
 
-        icon_path = get_resource_path(os.path.join("assets", "p.jpeg"))
+        icon_path = get_resource_path(os.path.join("assets", "p.png"))
         if os.path.exists(icon_path):
             self.setWindowIcon(QIcon(icon_path))
 
@@ -163,10 +163,18 @@ class DashboardWindow(QWidget):
         lay.setSpacing(2)
         self.sidebar_layout = lay
 
-        logo_lbl = QLabel("Pitch")
+        logo_lbl = OutlinedLabel("Pitch")
         logo_lbl.setObjectName("AppName")
-        logo_lbl.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
-        logo_lbl.setContentsMargins(6, 10, 0, 10)
+        logo_lbl.setColors("#FFFFFF", "#281B15", 4.5)
+        
+        # Explicitly set font to Segoe Script Bold to match the tray icon and branding
+        logo_font = QFont("Segoe Script")
+        logo_font.setBold(True)
+        logo_font.setPointSize(34)
+        logo_lbl.setFont(logo_font)
+        
+        logo_lbl.setAlignment(Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignVCenter)
+        logo_lbl.setContentsMargins(0, 10, 0, 10)
         lay.addWidget(logo_lbl)
         lay.addSpacing(8)
 
@@ -195,7 +203,7 @@ class DashboardWindow(QWidget):
         lay.addStretch()
 
 
-        ver_lbl = QLabel("v1.2")
+        ver_lbl = QLabel("v1.5")
         ver_lbl.setObjectName("VersionLbl")
         lay.addWidget(ver_lbl)
 
@@ -292,7 +300,7 @@ class DashboardWindow(QWidget):
             preset = self.config.get("visualizer_color_preset", "mono")
         self.setStyleSheet(get_stylesheet(theme, preset))
 
-        icon_path = get_resource_path(os.path.join("assets", "p.jpeg"))
+        icon_path = get_resource_path(os.path.join("assets", "p.png"))
         if os.path.exists(icon_path):
             self.setWindowIcon(QIcon(icon_path))
 

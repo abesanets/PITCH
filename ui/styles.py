@@ -53,7 +53,7 @@ def get_stylesheet(theme="dark", preset_key="mono"):
             border: 1px solid #7D6454;
         }}
         QWidget {{
-            font-family: "Inter", "Segoe UI Variable", "Segoe UI", "SF Pro Display", sans-serif;
+            font-family: "Comic Sans MS", "Segoe UI Variable", "Segoe UI", sans-serif;
             font-size: 13px;
             color: {text};
         }}
@@ -112,10 +112,9 @@ def get_stylesheet(theme="dark", preset_key="mono"):
         }}
         QLabel {{ color: {text}; background: transparent; }}
 
-        /* Logo text */
-        QLabel#AppName {{
+        #AppName {{
             font-family: "Pacifico", "Brush Script MT", "Great Vibes", "Lucida Handwriting", "Segoe Script", cursive;
-            font-size: 46px;
+            font-size: 50px;
             font-weight: bold;
             color: #281B15;
             margin-bottom: 4px;
@@ -171,11 +170,10 @@ def get_stylesheet(theme="dark", preset_key="mono"):
         }}
 
 
-        /* ── Content area ── */
-        QLabel#PageTitle {{
-            font-size: 20px;
-            font-weight: 700;
-            color: {text};
+        #PageTitle {{
+            font-size: 26px;
+            font-weight: 800;
+            color: #FFFFFF;
             letter-spacing: -0.3px;
         }}
         QLabel#SectionCap {{

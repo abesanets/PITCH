@@ -1,7 +1,7 @@
 """Custom UI widgets for VoiceAssistant"""
-from PyQt6.QtWidgets import QWidget, QPushButton, QHBoxLayout, QSizePolicy
+from PyQt6.QtWidgets import QWidget, QPushButton, QHBoxLayout, QSizePolicy, QLabel
 from PyQt6.QtCore import Qt, QRectF, QPropertyAnimation, QEasingCurve, pyqtProperty, pyqtSignal, QPointF
-from PyQt6.QtGui import QPainter, QColor, QPen, QBrush, QLinearGradient
+from PyQt6.QtGui import QPainter, QColor, QPen, QBrush, QLinearGradient, QPainterPath, QFontMetrics
 
 from .styles import _lerp_color
 from .styles_data import VISUALIZER_PRESETS
@@ -235,4 +235,55 @@ class ElidedLabel(QWidget):
         elided = fm.elidedText(self._text, Qt.TextElideMode.ElideRight, self.width())
         p.drawText(0, fm.ascent(), elided)
         p.end()
+
+
+class OutlinedLabel(QLabel):
+    """A QLabel that renders text with a custom fill color and outline stroke color."""
+    def __init__(self, text="", parent=None):
+        super().__init__(text, parent)
+        self._fill_color = QColor(255, 255, 255) # Default white
+        self._stroke_color = QColor(40, 27, 21)   # Default dark brown (#281B15)
+        self._stroke_width = 4.0
+
+    def setColors(self, fill, stroke, stroke_width=4.0):
+        self._fill_color = QColor(fill)
+        self._stroke_color = QColor(stroke)
+        self._stroke_width = stroke_width
+        self.update()
+
+    def paintEvent(self, event):
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+        
+        rect = self.rect()
+        path = QPainterPath()
+        font = self.font()
+        fm = QFontMetrics(font)
+        
+        text = self.text()
+        text_w = fm.horizontalAdvance(text)
+        text_h = fm.height()
+        
+        # Calculate horizontal and vertical positioning based on alignment
+        x = float(rect.left())
+        align = self.alignment()
+        if align & Qt.AlignmentFlag.AlignHCenter:
+            x = rect.left() + (rect.width() - text_w) / 2.0
+        elif align & Qt.AlignmentFlag.AlignRight:
+            x = rect.right() - text_w
+            
+        y = rect.top() + (rect.height() - text_h) / 2.0 + fm.ascent()
+        
+        path.addText(x, y, font, text)
+        
+        # Draw stroke
+        pen = QPen(self._stroke_color, self._stroke_width)
+        pen.setJoinStyle(Qt.PenJoinStyle.RoundJoin)
+        painter.setPen(pen)
+        painter.drawPath(path)
+        
+        # Draw fill
+        painter.fillPath(path, QBrush(self._fill_color))
+        painter.end()
+
 

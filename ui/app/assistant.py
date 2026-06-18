@@ -50,7 +50,7 @@ class VoiceAssistant:
         self.tray = QSystemTrayIcon()
         
         # Use theme-appropriate icon for tray
-        icon_path = get_resource_path(os.path.join("assets", "p.jpeg"))
+        icon_path = get_resource_path(os.path.join("assets", "p.png"))
         if os.path.exists(icon_path):
             self.tray.setIcon(QIcon(icon_path))
         else:
@@ -101,7 +101,7 @@ class VoiceAssistant:
         self.overlay.apply_config(self.config)
         
         # Update tray icon when theme changes
-        icon_path = get_resource_path(os.path.join("assets", "p.jpeg"))
+        icon_path = get_resource_path(os.path.join("assets", "p.png"))
         if os.path.exists(icon_path):
             self.tray.setIcon(QIcon(icon_path))
             
@@ -148,10 +148,6 @@ class VoiceAssistant:
         self.app.quit()
 
     def run(self):
-        print("\n" + "="*50)
-        print("🎙️  PITCH: Minimalist Voice Assistant запущен!")
-        print("👉  Удерживайте Ctrl+Win для диктовки.")
-        print("⚙️   Дважды кликните по иконке в трее, чтобы открыть Dashboard.")
-        print("="*50 + "\n")
+        print("PITCH v1.5 запущен. Удерживайте Ctrl+Win для диктовки.")
         
         self.app.exec()

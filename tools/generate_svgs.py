@@ -8,18 +8,15 @@ icons = {
     "predict": """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="{color}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="22"/></svg>"""
 }
 
-colors = {
-    "active": "#281B15",
-    "inactive": "#4E382B"
-}
+# Only active icons are used in the application layout
+color_active = "#281B15"
 
 assets_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "assets")
 
 for name, template in icons.items():
-    for state, color in colors.items():
-        filename = f"nav_{name}_{state}.svg"
-        filepath = os.path.join(assets_dir, filename)
-        content = template.replace("{color}", color)
-        with open(filepath, "w", encoding="utf-8") as f:
-            f.write(content)
-        print(f"Generated {filename}")
+    filename = f"nav_{name}_active.svg"
+    filepath = os.path.join(assets_dir, filename)
+    content = template.replace("{color}", color_active)
+    with open(filepath, "w", encoding="utf-8") as f:
+        f.write(content)
+    print(f"Generated {filename}")
