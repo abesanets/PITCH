@@ -159,7 +159,7 @@ class DashboardWindow(QWidget):
         sidebar.setFixedWidth(180)
 
         lay = QVBoxLayout(sidebar)
-        lay.setContentsMargins(10, 12, 10, 16)
+        lay.setContentsMargins(10, 2, 10, 16)
         lay.setSpacing(2)
         self.sidebar_layout = lay
 
@@ -174,7 +174,7 @@ class DashboardWindow(QWidget):
         logo_lbl.setFont(logo_font)
         
         logo_lbl.setAlignment(Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignVCenter)
-        logo_lbl.setContentsMargins(0, 10, 0, 10)
+        logo_lbl.setContentsMargins(0, 0, 0, 10)
         lay.addWidget(logo_lbl)
         lay.addSpacing(8)
 
