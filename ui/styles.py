@@ -175,7 +175,7 @@ def get_stylesheet(theme="dark", preset_key="mono"):
             border-bottom-left-radius: 24px;
             border-top-right-radius: 24px;
             border-bottom-right-radius: 24px;
-            border: 1px solid {border};
+            border: none;
         }}
         QStackedWidget {{
             background: transparent;
@@ -232,23 +232,23 @@ def get_stylesheet(theme="dark", preset_key="mono"):
 
         /* Inputs */
         QLineEdit, QComboBox {{
-            padding: 9px 13px;
+            padding: 9px 16px;
             background: {input_bg};
-            border: 1px solid {border};
+            border: none;
             color: {text};
-            border-radius: 9px;
+            border-radius: 18px;
             font-size: 13px;
         }}
         QLineEdit:focus, QComboBox:focus {{
-            border: 1px solid {primary};
+            border: none;
             background: {surface};
         }}
         QComboBox::drop-down {{ border: none; width: 28px; background: transparent; }}
         QComboBox::down-arrow {{ image: none; width: 0; height: 0; }}
         QComboBox QAbstractItemView {{
             background: {surface2};
-            border: 1px solid {border};
-            border-radius: 9px;
+            border: none;
+            border-radius: 12px;
             selection-background-color: {selected};
             selection-color: {text};
             color: {text};
@@ -261,7 +261,7 @@ def get_stylesheet(theme="dark", preset_key="mono"):
             padding: 9px 20px;
             font-weight: 700;
             font-size: 13px;
-            border-radius: 9px;
+            border-radius: 18px;
             border: none;
             background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
                 stop:0 #DFCEBA, stop:1 #F5ECE3);
@@ -271,6 +271,7 @@ def get_stylesheet(theme="dark", preset_key="mono"):
         QPushButton#PrimaryBtn:hover {{
             background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
                 stop:0 #E5D7C6, stop:1 #FFFFFF);
+            color: #281B15;
         }}
         QPushButton#PrimaryBtn:disabled {{
             background: {border};
@@ -282,29 +283,28 @@ def get_stylesheet(theme="dark", preset_key="mono"):
             padding: 9px 20px;
             font-weight: 500;
             font-size: 13px;
-            border-radius: 9px;
-            border: 1px solid {border};
+            border-radius: 18px;
+            border: none;
             background: {surface2};
             color: {muted};
         }}
         QPushButton#SecondaryBtn:hover {{
-            background: {nav_hover};
+            background: {surface};
             color: {text};
-            border-color: {primary};
         }}
 
         /* List widget */
         QListWidget {{
             background: {surface};
-            border: 1px solid {border};
-            border-radius: 10px;
+            border: none;
+            border-radius: 12px;
             color: {text};
             outline: 0;
             padding: 4px;
         }}
         QListWidget::item {{
             padding: 7px 10px;
-            border-radius: 7px;
+            border-radius: 8px;
             color: {muted};
         }}
         QListWidget::item:hover {{ background: {nav_hover}; color: {text}; }}
@@ -328,8 +328,8 @@ def get_stylesheet(theme="dark", preset_key="mono"):
         /* Text areas */
         QPlainTextEdit {{
             background: {console};
-            border: 1px solid {border};
-            border-radius: 10px;
+            border: none;
+            border-radius: 12px;
             color: {text};
             padding: 12px;
             selection-background-color: {primary};
@@ -373,17 +373,21 @@ def get_stylesheet(theme="dark", preset_key="mono"):
             letter-spacing: 0.5px;
         }}
 
-        /* Recent dictation items (Flat list style) */
-        QFrame#RecentItemFlat {{
+        /* Recent dictation items (Flat list style) & History items */
+        QFrame#RecentItemFlat, QFrame#RecentItem {{
             background: transparent;
             border: none;
+            border-radius: 12px;
         }}
-        QLabel#RecentSnippetFlat {{
+        QFrame#RecentItemFlat:hover, QFrame#RecentItem:hover {{
+            background: rgba(255, 255, 255, 0.04);
+        }}
+        QLabel#RecentSnippetFlat, QLabel#RecentSnippet {{
             font-size: 13px;
             font-weight: 700;
             color: {text};
         }}
-        QLabel#RecentMetaFlat {{
+        QLabel#RecentMetaFlat, QLabel#RecentMeta {{
             font-size: 10px;
             font-weight: 600;
             color: {muted};

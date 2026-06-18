@@ -117,7 +117,6 @@ class DashboardWindow(QWidget):
         self.history_entries = []
         self.init_ui()
         self.apply_theme(self.theme_name)
-        self.load_logs()
         self.load_history()
         self.update_statistics()
 
@@ -171,7 +170,6 @@ class DashboardWindow(QWidget):
         self._build_history_tab()
         self._build_settings_tab()
         self._build_recognition_tab()
-        self._build_logs_tab()
 
         icon_path = get_resource_path(os.path.join("assets", "p.jpeg"))
         if os.path.exists(icon_path):
@@ -205,8 +203,7 @@ class DashboardWindow(QWidget):
             ("Визуализатор",   1, "visualizer"),
             ("История",        2, "history"),
             ("Настройки",      3, "settings"),
-            ("Прогнозирование", 4, "predict"),
-            ("Логи",           5, "logs"),
+            ("Распознавание",  4, "predict"),
         ]
         for label, idx, icon_key in nav_items:
             btn = QPushButton("  " + label)
@@ -225,7 +222,7 @@ class DashboardWindow(QWidget):
 
         lay.addStretch()
 
-        self.status_dot_lbl = QLabel("● Готов")
+        self.status_dot_lbl = QLabel("Готов")
         self.status_dot_lbl.setObjectName("StatusDot")
         self.status_dot_lbl.setStyleSheet("color: #10B981; font-size: 11px;")
         ver_lbl = QLabel("v1.2")
@@ -256,7 +253,7 @@ class DashboardWindow(QWidget):
         inner = QWidget()
         inner.setFixedWidth(460)
         lay = QVBoxLayout(inner)
-        lay.setContentsMargins(0, 16, 0, 16)
+        lay.setContentsMargins(0, 0, 0, 0)
         lay.setSpacing(10)
 
         # ── Header ──
@@ -329,10 +326,11 @@ class DashboardWindow(QWidget):
             right.setObjectName("RecentMetaFlat")
             right.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
 
+            item_frame.setCursor(Qt.CursorShape.PointingHandCursor)
             ifl.addLayout(left, 1)
             ifl.addWidget(right)
             lay.addWidget(item_frame)
-            self.recent_items.append((snippet, ts, right))
+            self.recent_items.append((item_frame, snippet, ts, right))
 
         lay.addStretch()
 
@@ -349,7 +347,7 @@ class DashboardWindow(QWidget):
         inner = QWidget()
         inner.setFixedWidth(460)
         lay = QVBoxLayout(inner)
-        lay.setContentsMargins(0, 16, 0, 16)
+        lay.setContentsMargins(0, 0, 0, 0)
         lay.setSpacing(10)
 
         # ── Header ──
@@ -564,8 +562,8 @@ class DashboardWindow(QWidget):
         inner.setFixedWidth(460)
         inner.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Expanding)
         lay = QVBoxLayout(inner)
-        lay.setContentsMargins(0, 24, 0, 24)
-        lay.setSpacing(12)
+        lay.setContentsMargins(0, 0, 0, 0)
+        lay.setSpacing(10)
 
         self.history_stack = QStackedWidget()
 
@@ -618,7 +616,7 @@ class DashboardWindow(QWidget):
         detail_lay.setSpacing(10)
 
         back_hdr = QHBoxLayout()
-        self.btn_back_to_list = QPushButton("← Назад")
+        self.btn_back_to_list = QPushButton("Назад")
         self.btn_back_to_list.setObjectName("SecondaryBtn")
         self.btn_back_to_list.setCursor(Qt.CursorShape.PointingHandCursor)
         self.btn_back_to_list.setFixedWidth(100)
@@ -645,20 +643,6 @@ class DashboardWindow(QWidget):
         detail_lay.addWidget(self.lbl_clean)
         detail_lay.addWidget(self.txt_clean)
 
-        copy_lay = QHBoxLayout()
-        copy_lay.setSpacing(8)
-        self.btn_copy_raw = QPushButton("Копировать сырой")
-        self.btn_copy_raw.setObjectName("SecondaryBtn")
-        self.btn_copy_raw.setCursor(Qt.CursorShape.PointingHandCursor)
-        self.btn_copy_raw.clicked.connect(self.copy_raw_text)
-        self.btn_copy_clean = QPushButton("Копировать готовый")
-        self.btn_copy_clean.setObjectName("PrimaryBtn")
-        self.btn_copy_clean.setCursor(Qt.CursorShape.PointingHandCursor)
-        self.btn_copy_clean.clicked.connect(self.copy_clean_text)
-        copy_lay.addWidget(self.btn_copy_raw, 1)
-        copy_lay.addWidget(self.btn_copy_clean, 1)
-        detail_lay.addLayout(copy_lay)
-
         self.history_stack.addWidget(detail_page)
 
         lay.addWidget(self.history_stack)
@@ -673,11 +657,21 @@ class DashboardWindow(QWidget):
         outer = QHBoxLayout(page)
         outer.setContentsMargins(0, 0, 0, 0)
 
+        # Create QScrollArea with hidden scrollbars to prevent squeezing
+        self.settings_scroll = QScrollArea()
+        self.settings_scroll.setWidgetResizable(True)
+        self.settings_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.settings_scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.settings_scroll.setFrameShape(QFrame.Shape.NoFrame)
+        self.settings_scroll.setFixedWidth(460)
+        self.settings_scroll.setStyleSheet("QScrollArea { background: transparent; border: none; padding: 0px; margin: 0px; }")
+
         inner = QWidget()
-        inner.setFixedWidth(440)
+        inner.setObjectName("SettingsInnerWidget")
+        inner.setStyleSheet("QWidget#SettingsInnerWidget { background: transparent; }")
         lay = QVBoxLayout(inner)
-        lay.setContentsMargins(0, 24, 0, 24)
-        lay.setSpacing(12)
+        lay.setContentsMargins(0, 0, 0, 0)
+        lay.setSpacing(10)
 
         title = QLabel("Настройки")
         title.setObjectName("PageTitle")
@@ -845,8 +839,9 @@ class DashboardWindow(QWidget):
 
         lay.addStretch()
 
+        self.settings_scroll.setWidget(inner)
         outer.addStretch()
-        outer.addWidget(inner)
+        outer.addWidget(self.settings_scroll)
         outer.addStretch()
         self.stack.addWidget(page)
 
@@ -862,13 +857,13 @@ class DashboardWindow(QWidget):
         self.recognition_scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self.recognition_scroll.setFrameShape(QFrame.Shape.NoFrame)
         self.recognition_scroll.setFixedWidth(460)
-        self.recognition_scroll.setStyleSheet("QScrollArea { background: transparent; border: none; }")
+        self.recognition_scroll.setStyleSheet("QScrollArea { background: transparent; border: none; padding: 0px; margin: 0px; }")
 
         self.recognition_inner = QWidget()
         self.recognition_inner.setObjectName("RecognitionInnerWidget")
         self.recognition_inner.setStyleSheet("QWidget#RecognitionInnerWidget { background: transparent; }")
         lay = QVBoxLayout(self.recognition_inner)
-        lay.setContentsMargins(10, 20, 10, 20)
+        lay.setContentsMargins(0, 0, 0, 0)
         lay.setSpacing(10)
 
         title = QLabel("Распознавание")
@@ -1057,13 +1052,13 @@ class DashboardWindow(QWidget):
         self.recognition_scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self.recognition_scroll.setFrameShape(QFrame.Shape.NoFrame)
         self.recognition_scroll.setFixedWidth(460)
-        self.recognition_scroll.setStyleSheet("QScrollArea { background: transparent; border: none; }")
+        self.recognition_scroll.setStyleSheet("QScrollArea { background: transparent; border: none; padding: 0px; margin: 0px; }")
 
         self.recognition_inner = QWidget()
         self.recognition_inner.setObjectName("RecognitionInnerWidget")
         self.recognition_inner.setStyleSheet("QWidget#RecognitionInnerWidget { background: transparent; }")
         lay = QVBoxLayout(self.recognition_inner)
-        lay.setContentsMargins(10, 20, 10, 20)
+        lay.setContentsMargins(0, 0, 0, 0)
         lay.setSpacing(10)
 
         title = QLabel("Распознавание")
@@ -1155,29 +1150,10 @@ class DashboardWindow(QWidget):
         style_cap.setObjectName("SectionCap")
         scl.addWidget(style_cap)
         
-        # Grid of buttons for selecting style
-        buttons_widget = QWidget()
-        buttons_lay = QGridLayout(buttons_widget)
-        buttons_lay.setContentsMargins(0, 0, 0, 0)
-        buttons_lay.setSpacing(6)
-        
-        self.style_buttons = {}
-        styles_info = [
-            ("Редактор", "default", 0, 0),
-            ("Чат", "chat", 0, 1),
-            ("Английский", "translate_en", 1, 0),
-            ("Кастом", "custom", 1, 1),
-        ]
-        
-        for name, key, r, c in styles_info:
-            btn = QPushButton(name)
-            btn.setCursor(Qt.CursorShape.PointingHandCursor)
-            btn.setFixedHeight(30)
-            btn.clicked.connect(lambda _, k=key: self._select_style(k))
-            buttons_lay.addWidget(btn, r, c)
-            self.style_buttons[key] = btn
-            
-        scl.addWidget(buttons_widget)
+        self.style_seg = SegmentedControl(["Редактор", "Чат", "Английский", "Кастом"])
+        self.style_keys = ["default", "chat", "translate_en", "custom"]
+        self.style_seg.currentChanged.connect(self._on_style_seg_changed)
+        scl.addWidget(self.style_seg)
         
         # Style details info card (SubCard)
         self.style_info_card = QFrame()
@@ -1229,20 +1205,13 @@ class DashboardWindow(QWidget):
         self._auto_save_recognition()
 
     def _update_style_ui(self, key):
-        active_style = (
-            "background: rgba(223,206,186,0.18); border: 1px solid rgba(245,236,227,0.50); "
-            "color: #F5ECE3; font-weight: 700; border-radius: 8px;"
-        )
-        idle_style = (
-            "background: #4E382B; border: 1px solid #7D6454; "
-            "color: #D4C5B9; font-weight: 500; border-radius: 8px;"
-        )
-            
-        for k, btn in self.style_buttons.items():
-            if k == key:
-                btn.setStyleSheet(active_style)
-            else:
-                btn.setStyleSheet(idle_style)
+        if hasattr(self, 'style_seg') and hasattr(self, 'style_keys'):
+            try:
+                idx = self.style_keys.index(key)
+                if self.style_seg.currentIndex() != idx:
+                    self.style_seg.setCurrentIndex(idx)
+            except ValueError:
+                pass
 
         info = STYLE_DETAILS.get(key, STYLE_DETAILS["default"])
         self.style_desc_lbl.setText(info["desc"])
@@ -1251,6 +1220,10 @@ class DashboardWindow(QWidget):
         is_custom = key == "custom"
         self.custom_style_label.setVisible(is_custom)
         self.custom_style_edit.setVisible(is_custom)
+
+    def _on_style_seg_changed(self, idx):
+        key = self.style_keys[idx]
+        self._select_style(key)
 
     def _auto_save_recognition(self):
         """Auto-save recognition settings."""
@@ -1261,39 +1234,7 @@ class DashboardWindow(QWidget):
         self.config["custom_formatting_style"] = self.custom_style_edit.toPlainText().strip()
         self.save_callback(self.config)
 
-    def _build_logs_tab(self):
-        page = QWidget()
-        outer = QHBoxLayout(page)
-        outer.setContentsMargins(0, 0, 0, 0)
 
-        inner = QWidget()
-        inner.setFixedWidth(440)
-        inner.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Expanding)
-        lay = QVBoxLayout(inner)
-        lay.setContentsMargins(0, 24, 0, 24)
-        lay.setSpacing(12)
-
-        hdr = QHBoxLayout()
-        title = QLabel("Логи")
-        title.setObjectName("PageTitle")
-        hdr.addWidget(title)
-        hdr.addStretch()
-        btn_clear = QPushButton("Очистить")
-        btn_clear.setObjectName("SecondaryBtn")
-        btn_clear.setCursor(Qt.CursorShape.PointingHandCursor)
-        btn_clear.clicked.connect(self.clear_logs)
-        hdr.addWidget(btn_clear)
-        lay.addLayout(hdr)
-
-        self.log_area = QPlainTextEdit()
-        self.log_area.setReadOnly(True)
-        self.log_area.setObjectName("LogConsole")
-        lay.addWidget(self.log_area, 1)
-
-        outer.addStretch()
-        outer.addWidget(inner)
-        outer.addStretch()
-        self.stack.addWidget(page)
 
     def apply_theme(self, theme, preset=None):
         self.theme_name = theme
@@ -1326,9 +1267,9 @@ class DashboardWindow(QWidget):
 
     def set_system_state(self, state):
         states = {
-            "idle":       ("#10B981", "rgba(16,185,129,0.12)",  "rgba(16,185,129,0.30)",  "● Готов"),
-            "recording":  ("#38BDF8", "rgba(56,189,248,0.12)",  "rgba(56,189,248,0.30)",  "● Запись"),
-            "processing": ("#A78BFA", "rgba(167,139,250,0.12)", "rgba(167,139,250,0.30)", "● Обработка"),
+            "idle":       ("#10B981", "rgba(16,185,129,0.12)",  "rgba(16,185,129,0.30)",  "Готов"),
+            "recording":  ("#38BDF8", "rgba(56,189,248,0.12)",  "rgba(56,189,248,0.30)",  "Запись"),
+            "processing": ("#A78BFA", "rgba(167,139,250,0.12)", "rgba(167,139,250,0.30)", "Обработка"),
         }
         color, bg, bdr, text = states.get(state, states["idle"])
         badge_style = (
@@ -1356,30 +1297,15 @@ class DashboardWindow(QWidget):
         self.apply_theme(self.theme_name)
         if index == 0: self.update_statistics()
         elif index == 2: self.load_history()
-        elif index == 5: self.load_logs()
 
     def load_logs(self):
-        log_path = "echo.log"
-        if os.path.exists(log_path):
-            try:
-                with open(log_path, "r", encoding="utf-8") as f:
-                    self.log_area.setPlainText("".join(f.readlines()[-150:]))
-                    self.log_area.verticalScrollBar().setValue(self.log_area.verticalScrollBar().maximum())
-            except Exception as e:
-                self.log_area.setPlainText(f"Ошибка: {e}")
-        else:
-            self.log_area.setPlainText("Лог пуст.")
+        pass
 
     def append_log(self, text):
-        self.log_area.appendPlainText(text)
-        self.log_area.verticalScrollBar().setValue(self.log_area.verticalScrollBar().maximum())
+        print(text)
 
     def clear_logs(self):
-        log_path = "echo.log"
-        if os.path.exists(log_path):
-            try: open(log_path, "w", encoding="utf-8").close()
-            except Exception: pass
-        self.log_area.clear()
+        pass
 
     def load_history(self):
         self.history_entries = history_manager.load_history()
@@ -1408,9 +1334,6 @@ class DashboardWindow(QWidget):
             snip_lbl = ElidedLabel(snippet if snippet else "—")
             snip_lbl.setObjectName("RecentSnippet")
             snip_lbl.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Preferred)
-            pal = snip_lbl.palette()
-            pal.setColor(QPalette.ColorRole.WindowText, QColor("#F1F3F7" if self.theme_name == "dark" else "#0D0D0D"))
-            snip_lbl.setPalette(pal)
             meta_lbl = QLabel(f"{date_str}  {time_str}  ·  {words} сл.")
             meta_lbl.setObjectName("RecentMeta")
             left.addWidget(snip_lbl)
@@ -1448,7 +1371,7 @@ class DashboardWindow(QWidget):
         self.val_chars.setText(str(stats["total_chars"]))
         self._update_hotkey_badge()
         entries = history_manager.load_history()[:3]
-        for i, (snippet_lbl, ts_lbl, right_lbl) in enumerate(self.recent_items):
+        for i, (item_frame, snippet_lbl, ts_lbl, right_lbl) in enumerate(self.recent_items):
             if i < len(entries):
                 e = entries[i]
                 text = e.get("cleaned_text") or e.get("raw_text", "")
@@ -1456,10 +1379,16 @@ class DashboardWindow(QWidget):
                 snippet_lbl.setText(short if short else "—")
                 ts_lbl.setText(e.get("timestamp", "").split()[-1][:5])
                 right_lbl.setText(f"{e.get('total_latency', 0):.1f}с")
+                item_frame.mousePressEvent = lambda e, idx=i: self._open_history_from_overview(idx)
             else:
                 snippet_lbl.setText("—")
                 ts_lbl.setText("")
                 right_lbl.setText("")
+                item_frame.mousePressEvent = None
+
+    def _open_history_from_overview(self, idx):
+        self.switch_tab(2)
+        self._open_history_entry(idx)
 
     def toggle_api_visibility(self):
         if self.api_input.echoMode() == QLineEdit.EchoMode.Password:
