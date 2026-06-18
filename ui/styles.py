@@ -202,7 +202,7 @@ def get_stylesheet(theme="dark", preset_key="mono"):
 
         /* Stat cards */
         QLabel#StatNum {{
-            font-size: 30px;
+            font-size: 24px;
             font-weight: 900;
             color: {text};
             letter-spacing: -0.8px;

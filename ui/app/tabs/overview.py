@@ -28,15 +28,23 @@ def build_overview_tab(d) -> QWidget:
 
     stats_grid = QGridLayout()
     stats_grid.setSpacing(8)
-    c1, d.val_total = _stat_card("ДИКТОВОК")
-    c2, d.val_lat   = _stat_card("ЗАДЕРЖКА")
-    c3, d.val_words = _stat_card("СЛОВ")
-    c4, d.val_chars = _stat_card("СИМВОЛОВ")
+    c1, d.val_total   = _stat_card("ДИКТОВОК")
+    c2, d.val_words   = _stat_card("СЛОВ")
+    c3, d.val_chars   = _stat_card("СИМВОЛОВ")
+    c4, d.val_lat     = _stat_card("ЗАДЕРЖКА")
+    c5, d.val_whisper = _stat_card("WHISPER")
+    c6, d.val_llm     = _stat_card("LLM")
+    
     d.val_lat.setText("0.0 с")
+    d.val_whisper.setText("0.0 с")
+    d.val_llm.setText("0.0 с")
+    
     stats_grid.addWidget(c1, 0, 0)
     stats_grid.addWidget(c2, 0, 1)
-    stats_grid.addWidget(c3, 1, 0)
-    stats_grid.addWidget(c4, 1, 1)
+    stats_grid.addWidget(c3, 0, 2)
+    stats_grid.addWidget(c4, 1, 0)
+    stats_grid.addWidget(c5, 1, 1)
+    stats_grid.addWidget(c6, 1, 2)
     lay.addLayout(stats_grid)
 
     hotkey_card = QFrame()
@@ -58,7 +66,7 @@ def build_overview_tab(d) -> QWidget:
     lay.addWidget(recent_title)
 
     d.recent_items = []
-    for _ in range(3):
+    for _ in range(5):
         item_frame = QFrame()
         item_frame.setObjectName("RecentItemFlat")
         ifl = QHBoxLayout(item_frame)
@@ -98,8 +106,8 @@ def _stat_card(caption: str):
     card = QFrame()
     card.setObjectName("Card")
     cl = QVBoxLayout(card)
-    cl.setContentsMargins(16, 14, 16, 14)
-    cl.setSpacing(4)
+    cl.setContentsMargins(10, 8, 10, 8)
+    cl.setSpacing(2)
     cap = QLabel(caption)
     cap.setObjectName("StatCap")
     val = QLabel("0")
@@ -113,12 +121,14 @@ def update_statistics(d) -> None:
     """Refresh statistics cards and recent items from history."""
     stats = history_manager.get_statistics()
     d.val_total.setText(str(stats["total_dictations"]))
-    d.val_lat.setText(f"{stats['avg_total_latency']:.1f} с")
     d.val_words.setText(str(stats["total_words"]))
     d.val_chars.setText(str(stats["total_chars"]))
+    d.val_lat.setText(f"{stats['avg_total_latency']:.1f} с")
+    d.val_whisper.setText(f"{stats['avg_whisper_latency']:.1f} с")
+    d.val_llm.setText(f"{stats['avg_llm_latency']:.1f} с")
     _update_hotkey_badge(d)
 
-    entries = history_manager.load_history()[:3]
+    entries = history_manager.load_history()[:5]
     for i, (item_frame, snippet_lbl, ts_lbl, right_lbl) in enumerate(d.recent_items):
         if i < len(entries):
             e = entries[i]
