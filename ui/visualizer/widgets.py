@@ -58,11 +58,12 @@ class PreviewWidget(QWidget):
         
         # Draw background based on mode
         if self._bg_mode == "solid":
-            bg = QColor(9, 9, 11, 245)
-            brd = QColor(39, 39, 42)
+            preset = VISUALIZER_PRESETS.get(self._preset_key, VISUALIZER_PRESETS["mono"])
+            bg = preset.get("bg_color", {}).get(self._theme, QColor(9, 9, 11, 245))
+            brd = QColor(min(255, bg.red() + 25), min(255, bg.green() + 25), min(255, bg.blue() + 25), 255)
             p.setBrush(QBrush(bg))
             p.setPen(QPen(brd, 1))
-            p.drawRoundedRect(QRectF(ox, oy, ow, oh), 8, 8)
+            p.drawRoundedRect(QRectF(ox, oy, ow, oh), oh / 2, oh / 2)
         # For "none" mode, skip background drawing entirely
         
         preset = VISUALIZER_PRESETS.get(self._preset_key, VISUALIZER_PRESETS["mono"])
@@ -240,17 +241,17 @@ class OverlayWindow(QWidget):
         
         preset = VISUALIZER_PRESETS.get(self.color_preset, VISUALIZER_PRESETS["mono"])
 
-        bg_color   = QColor(34, 34, 34, 172)     # Soft dark background
+        bg_color = preset.get("bg_color", {}).get(self.theme, QColor(34, 34, 34, 172))
         glow_color = QColor(255, 255, 255, 24)
 
         # Draw background based on mode
         if self.bg_mode == "solid":
             painter.setBrush(QBrush(bg_color))
             painter.setPen(Qt.PenStyle.NoPen)
-            painter.drawRoundedRect(QRectF(0, 0, w, h), 10, 10)
+            painter.drawRoundedRect(QRectF(0, 0, w, h), h / 2, h / 2)
             painter.setBrush(Qt.BrushStyle.NoBrush)
             painter.setPen(QPen(glow_color, 1))
-            painter.drawRoundedRect(QRectF(1.5, 1.5, w - 3, h - 3), 9, 9)
+            painter.drawRoundedRect(QRectF(1.5, 1.5, w - 3, h - 3), (h - 3) / 2, (h - 3) / 2)
         # For "none" mode, skip background drawing entirely
 
         if self.state == "recording":

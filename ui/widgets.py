@@ -67,7 +67,7 @@ class ToggleSwitch(QWidget):
 
 
 class SegmentedControl(QWidget):
-    """Segmented control widget (chip-style) — fixed dark-blue palette"""
+    """Segmented control widget (pill-track style)"""
     currentChanged = pyqtSignal(int)
 
     def __init__(self, options, parent=None):
@@ -77,10 +77,13 @@ class SegmentedControl(QWidget):
         self._theme = "dark"
         self._buttons = []
         self.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
-        self.setFixedHeight(30)
+        self.setFixedHeight(32)
+        self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
+        self.setStyleSheet("SegmentedControl { background: #4E382B; border-radius: 16px; }")
+
         lay = QHBoxLayout(self)
-        lay.setContentsMargins(0, 0, 0, 0)
-        lay.setSpacing(4)
+        lay.setContentsMargins(2, 2, 2, 2)
+        lay.setSpacing(2)
         for i, text in enumerate(options):
             btn = QPushButton(text)
             btn.setCursor(Qt.CursorShape.PointingHandCursor)
@@ -104,27 +107,25 @@ class SegmentedControl(QWidget):
     def set_accent(self, primary_hex): pass
 
     def _update_styles(self):
-        active_bg   = "rgba(223,206,186,0.18)"
-        active_bdr  = "rgba(245,236,227,0.50)"
-        active_txt  = "#F5ECE3"
-        idle_bg     = "#4E382B"
-        idle_bdr    = "#7D6454"
+        active_bg   = "#DFCEBA"
+        active_txt  = "#281B15"
+        idle_bg     = "transparent"
         idle_txt    = "#D4C5B9"
-        hover_bg    = "#5A4234"
+        hover_bg    = "rgba(255,255,255,0.06)"
         hover_txt   = "#F5ECE3"
 
         for i, btn in enumerate(self._buttons):
             if i == self._current:
                 btn.setStyleSheet(
                     f"QPushButton {{ background:{active_bg}; color:{active_txt}; "
-                    f"border:1px solid {active_bdr}; border-radius:6px; "
-                    f"font-weight:700; font-size:12px; padding:0 11px; }}"
+                    f"border:none; border-radius:14px; "
+                    f"font-weight:700; font-size:11px; padding:0 14px; }}"
                 )
             else:
                 btn.setStyleSheet(
                     f"QPushButton {{ background:{idle_bg}; color:{idle_txt}; "
-                    f"border:1px solid {idle_bdr}; border-radius:6px; "
-                    f"font-weight:500; font-size:12px; padding:0 11px; }} "
+                    f"border:none; border-radius:14px; "
+                    f"font-weight:600; font-size:11px; padding:0 14px; }} "
                     f"QPushButton:hover {{ color:{hover_txt}; background:{hover_bg}; }}"
                 )
 
@@ -132,16 +133,17 @@ class SegmentedControl(QWidget):
 
 
 class ColorPresetSelector(QWidget):
-    """Color preset selector"""
+    """Color preset selector (dots-only style)"""
     presetChanged = pyqtSignal(str)
 
     def __init__(self, parent=None):
         super().__init__(parent)
         self._current = "mono"
         self._theme = "dark"
-        self.setFixedHeight(60)
+        self.setFixedHeight(42)
         self.setCursor(Qt.CursorShape.PointingHandCursor)
-        self._order = ["mono", "ocean", "neon", "sunset", "lavender"]
+        self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
+        self._order = ["mono", "chocolate", "ocean", "aurora", "neon", "sunset", "lavender", "rose", "forest"]
 
     def currentPreset(self): return self._current
     def setCurrentPreset(self, k): self._current = k; self.update()
@@ -150,11 +152,11 @@ class ColorPresetSelector(QWidget):
     def mousePressEvent(self, e):
         x = e.position().x()
         n = len(self._order)
-        total = n * 48
+        total = n * 44
         sx = (self.width() - total) / 2
         for i, key in enumerate(self._order):
-            cx = sx + i * 48 + 14
-            if abs(x - cx) < 18:
+            cx = sx + i * 44 + 22
+            if abs(x - cx) < 20:
                 self._current = key
                 self.update()
                 self.presetChanged.emit(key)
@@ -164,33 +166,38 @@ class ColorPresetSelector(QWidget):
         p = QPainter(self)
         p.setRenderHint(QPainter.RenderHint.Antialiasing)
         n = len(self._order)
-        total = n * 48
+        total = n * 44
         sx = (self.width() - total) / 2
+
+        # Draw unified track container
+        track_rect = QRectF(sx - 12, 0, total + 24, 42)
+        p.setBrush(QBrush(QColor(78, 56, 43)))
+        p.setPen(Qt.PenStyle.NoPen)
+        p.drawRoundedRect(track_rect, 21, 21)
+
         for i, key in enumerate(self._order):
-            cx = sx + i * 48 + 14
-            cy = 16
-            r = 12
+            cx = sx + i * 44 + 22
+            cy = 21
+            r = 13
             
             preset = VISUALIZER_PRESETS[key]
             colors = preset["waves"]
             c1, c2, c3 = colors[0][self._theme], colors[1][self._theme], colors[2][self._theme]
             
-            grad = QLinearGradient(cx - r, cy - r, cx + r, cy + r)
-            grad.setColorAt(0.0, QColor(c1.red(), c1.green(), c1.blue(), 220))
-            grad.setColorAt(0.5, QColor(c2.red(), c2.green(), c2.blue(), 200))
-            grad.setColorAt(1.0, QColor(c3.red(), c3.green(), c3.blue(), 180))
-            p.setBrush(QBrush(grad))
+            # Active selection outline ring
             if key == self._current:
-                p.setPen(QPen(QColor(245, 236, 227), 2.5))  # active sand selection ring
-            else:
-                p.setPen(QPen(QColor(78, 56, 43), 1))
+                p.setPen(QPen(QColor(245, 236, 227), 2.0))
+                p.setBrush(Qt.BrushStyle.NoBrush)
+                p.drawEllipse(QPointF(cx, cy), r + 3, r + 3)
+
+            # Color dot
+            grad = QLinearGradient(cx - r, cy - r, cx + r, cy + r)
+            grad.setColorAt(0.0, QColor(c1.red(), c1.green(), c1.blue(), 230))
+            grad.setColorAt(0.5, QColor(c2.red(), c2.green(), c2.blue(), 210))
+            grad.setColorAt(1.0, QColor(c3.red(), c3.green(), c3.blue(), 190))
+            p.setBrush(QBrush(grad))
+            p.setPen(Qt.PenStyle.NoPen)
             p.drawEllipse(QPointF(cx, cy), r, r)
-            p.setPen(QPen(QColor(212, 197, 185)))
-            font = QFont("Arial", 8)
-            p.setFont(font)
-            name = preset["name"]
-            tw = p.fontMetrics().horizontalAdvance(name)
-            p.drawText(int(cx - tw / 2), 46, name)
         p.end()
 
 

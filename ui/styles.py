@@ -175,7 +175,7 @@ def get_stylesheet(theme="dark", preset_key="mono"):
             border-bottom-left-radius: 24px;
             border-top-right-radius: 24px;
             border-bottom-right-radius: 24px;
-            border: none;
+            border: 1px solid {border};
         }}
         QStackedWidget {{
             background: transparent;
@@ -207,27 +207,27 @@ def get_stylesheet(theme="dark", preset_key="mono"):
         /* Cards */
         QFrame#Card {{
             background: {surface};
-            border: 1px solid {border};
-            border-radius: 14px;
+            border: none;
+            border-radius: 16px;
         }}
         QFrame#SubCard {{
             background: {surface2};
-            border: 1px solid {border};
-            border-radius: 10px;
+            border: none;
+            border-radius: 12px;
         }}
 
         /* Stat cards */
         QLabel#StatNum {{
-            font-size: 26px;
-            font-weight: 800;
+            font-size: 30px;
+            font-weight: 900;
             color: {text};
-            letter-spacing: -0.5px;
+            letter-spacing: -0.8px;
         }}
         QLabel#StatCap {{
             font-size: 10px;
-            color: {faint};
-            font-weight: 700;
-            letter-spacing: 1px;
+            color: {muted};
+            font-weight: 800;
+            letter-spacing: 0.5px;
         }}
 
         /* Inputs */
@@ -367,29 +367,26 @@ def get_stylesheet(theme="dark", preset_key="mono"):
             font-weight: 700;
             color: {primary};
             background: {badge_bg};
-            border: 1px solid {badge_bdr};
-            border-radius: 6px;
+            border: none;
+            border-radius: 8px;
             padding: 4px 10px;
             letter-spacing: 0.5px;
         }}
 
-        /* Recent dictation items */
-        QFrame#RecentItem {{
-            background: {surface2};
-            border: 1px solid {border};
-            border-radius: 10px;
+        /* Recent dictation items (Flat list style) */
+        QFrame#RecentItemFlat {{
+            background: transparent;
+            border: none;
         }}
-        QLabel#RecentSnippet {{
-            font-size: 12px;
+        QLabel#RecentSnippetFlat {{
+            font-size: 13px;
+            font-weight: 700;
             color: {text};
         }}
-        QWidget#RecentSnippet {{
-            font-size: 12px;
-            color: {text};
-        }}
-        QLabel#RecentMeta {{
+        QLabel#RecentMetaFlat {{
             font-size: 10px;
-            color: {faint};
+            font-weight: 600;
+            color: {muted};
         }}
         QLabel#HistoryLatency {{
             font-size: 12px;
@@ -420,30 +417,29 @@ def get_stylesheet(theme="dark", preset_key="mono"):
         /* Preview frame */
         QFrame#PreviewFrame {{
             background: {surface2};
-            border: 1px solid {border};
-            border-radius: 12px;
+            border: none;
+            border-radius: 16px;
         }}
 
         /* Slider */
         QSlider::groove:horizontal {{
-            height: 4px;
-            background: {border};
-            border-radius: 2px;
+            height: 6px;
+            background: {surface2};
+            border-radius: 3px;
         }}
         QSlider::handle:horizontal {{
             background: {primary};
             width: 14px;
             height: 14px;
-            margin: -5px 0;
+            margin: -4px 0;
             border-radius: 7px;
         }}
         QSlider::handle:horizontal:hover {{
             background: {hover};
         }}
         QSlider::sub-page:horizontal {{
-            background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
-                stop:0 #DFCEBA, stop:1 #F5ECE3);
-            border-radius: 2px;
+            background: {primary};
+            border-radius: 3px;
         }}
 
         /* SegmentedControl active state */

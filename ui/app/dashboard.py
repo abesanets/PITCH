@@ -110,6 +110,7 @@ class DashboardWindow(QWidget):
     def __init__(self, config, save_callback):
         super().__init__()
         self.setObjectName("DashboardWindow")
+        self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
         self.config = config
         self.save_callback = save_callback
         self.theme_name = self.config.get("theme", "dark")
@@ -128,7 +129,7 @@ class DashboardWindow(QWidget):
 
         # Main vertical layout: title bar + content
         main_vbox = QVBoxLayout(self)
-        main_vbox.setContentsMargins(0, 0, 0, 0)
+        main_vbox.setContentsMargins(2, 2, 2, 2)
         main_vbox.setSpacing(0)
 
         # Custom title bar
@@ -153,9 +154,15 @@ class DashboardWindow(QWidget):
         self.stack = QStackedWidget()
         container_layout.addWidget(self.stack)
 
-        # Give padding on the right/bottom/top to let the chocolate card look floating & premium
-        root.setContentsMargins(0, 0, 12, 12)
-        root.addWidget(self.main_container)
+        # Wrap main_container in a layout with 12px margin on all sides to make it float symmetrically
+        # and ensure the 1px border is fully visible on all 4 sides without touching adjacent widgets.
+        main_container_wrapper = QWidget()
+        wrapper_layout = QVBoxLayout(main_container_wrapper)
+        wrapper_layout.setContentsMargins(12, 12, 12, 12)
+        wrapper_layout.setSpacing(0)
+        wrapper_layout.addWidget(self.main_container)
+
+        root.addWidget(main_container_wrapper)
 
         main_vbox.addWidget(content)
 
@@ -249,8 +256,8 @@ class DashboardWindow(QWidget):
         inner = QWidget()
         inner.setFixedWidth(460)
         lay = QVBoxLayout(inner)
-        lay.setContentsMargins(0, 24, 0, 24)
-        lay.setSpacing(12)
+        lay.setContentsMargins(0, 16, 0, 16)
+        lay.setSpacing(10)
 
         # ── Header ──
         hdr = QHBoxLayout()
@@ -258,17 +265,17 @@ class DashboardWindow(QWidget):
         title.setObjectName("PageTitle")
         hdr.addWidget(title)
         hdr.addStretch()
-        self.dash_state_badge = QLabel("● Готов")
+        self.dash_state_badge = QLabel("Готов")
         self.dash_state_badge.setStyleSheet(
-            "color: #10B981; font-size: 12px; font-weight: 700; "
-            "background: rgba(16,185,129,0.12); border: 1px solid rgba(16,185,129,0.30); "
-            "border-radius: 6px; padding: 3px 10px;"
+            "color: #10B981; font-size: 11px; font-weight: 800; "
+            "background: rgba(16,185,129,0.15); "
+            "border-radius: 4px; padding: 2px 8px;"
         )
         lay.addLayout(hdr)
 
         # ── Stats grid 2×2 ──
         stats_grid = QGridLayout()
-        stats_grid.setSpacing(10)
+        stats_grid.setSpacing(8)
         c1, self.val_total = self._stat_card("ДИКТОВОК")
         c2, self.val_lat   = self._stat_card("ЗАДЕРЖКА")
         c3, self.val_words = self._stat_card("СЛОВ")
@@ -284,11 +291,8 @@ class DashboardWindow(QWidget):
         hotkey_card = QFrame()
         hotkey_card.setObjectName("Card")
         hkl = QHBoxLayout(hotkey_card)
-        hkl.setContentsMargins(14, 11, 14, 11)
+        hkl.setContentsMargins(14, 10, 14, 10)
         hkl.setSpacing(10)
-        hk_icon = QLabel("⌨")
-        hk_icon.setObjectName("HintTitle")
-        hkl.addWidget(hk_icon)
         hk_text = QLabel("Горячая клавиша")
         hk_text.setObjectName("FieldLbl")
         hkl.addWidget(hk_text)
@@ -298,48 +302,38 @@ class DashboardWindow(QWidget):
         hkl.addWidget(self.hotkey_badge)
         lay.addWidget(hotkey_card)
 
-        # ── Recent dictations ──
-        recent_card = QFrame()
-        recent_card.setObjectName("Card")
-        rcl = QVBoxLayout(recent_card)
-        rcl.setContentsMargins(14, 12, 14, 12)
-        rcl.setSpacing(8)
-
-        recent_hdr = QHBoxLayout()
+        # ── Recent dictations (Flat list) ──
         recent_title = QLabel("ПОСЛЕДНИЕ ДИКТОВКИ")
         recent_title.setObjectName("SectionCap")
-        recent_hdr.addWidget(recent_title)
-        recent_hdr.addStretch()
-        rcl.addLayout(recent_hdr)
+        lay.addWidget(recent_title)
 
         self.recent_items = []
         for _ in range(3):
             item_frame = QFrame()
-            item_frame.setObjectName("RecentItem")
+            item_frame.setObjectName("RecentItemFlat")
             ifl = QHBoxLayout(item_frame)
-            ifl.setContentsMargins(10, 8, 10, 8)
+            ifl.setContentsMargins(8, 4, 8, 4)
             ifl.setSpacing(10)
 
             left = QVBoxLayout()
-            left.setSpacing(2)
+            left.setSpacing(1)
             snippet = QLabel("—")
-            snippet.setObjectName("RecentSnippet")
+            snippet.setObjectName("RecentSnippetFlat")
             snippet.setWordWrap(False)
             ts = QLabel("")
-            ts.setObjectName("RecentMeta")
+            ts.setObjectName("RecentMetaFlat")
             left.addWidget(snippet)
             left.addWidget(ts)
 
             right = QLabel("")
-            right.setObjectName("RecentMeta")
+            right.setObjectName("RecentMetaFlat")
             right.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
 
             ifl.addLayout(left, 1)
             ifl.addWidget(right)
-            rcl.addWidget(item_frame)
+            lay.addWidget(item_frame)
             self.recent_items.append((snippet, ts, right))
 
-        lay.addWidget(recent_card)
         lay.addStretch()
 
         outer.addStretch()
@@ -355,8 +349,8 @@ class DashboardWindow(QWidget):
         inner = QWidget()
         inner.setFixedWidth(460)
         lay = QVBoxLayout(inner)
-        lay.setContentsMargins(0, 24, 0, 24)
-        lay.setSpacing(12)
+        lay.setContentsMargins(0, 16, 0, 16)
+        lay.setSpacing(10)
 
         # ── Header ──
         hdr = QHBoxLayout()
@@ -370,8 +364,8 @@ class DashboardWindow(QWidget):
         preview_card = QFrame()
         preview_card.setObjectName("Card")
         pcl = QVBoxLayout(preview_card)
-        pcl.setContentsMargins(14, 12, 14, 12)
-        pcl.setSpacing(8)
+        pcl.setContentsMargins(16, 10, 16, 10)
+        pcl.setSpacing(6)
 
         preview_cap = QLabel("ПРЕДПРОСМОТР")
         preview_cap.setObjectName("SectionCap")
@@ -389,15 +383,15 @@ class DashboardWindow(QWidget):
         ctrl = QFrame()
         ctrl.setObjectName("Card")
         cl = QVBoxLayout(ctrl)
-        cl.setContentsMargins(16, 14, 16, 14)
-        cl.setSpacing(14)
+        cl.setContentsMargins(16, 12, 16, 12)
+        cl.setSpacing(10)
 
         def ctrl_cell(label_text, widget):
             """Vertical cell: small cap label on top, control below."""
             cell = QWidget()
             vl = QVBoxLayout(cell)
             vl.setContentsMargins(0, 0, 0, 0)
-            vl.setSpacing(6)
+            vl.setSpacing(4)
             lbl = QLabel(label_text)
             lbl.setObjectName("SectionCap")
             vl.addWidget(lbl)
@@ -421,49 +415,36 @@ class DashboardWindow(QWidget):
 
         # Row 1: Форма | Размер
         row1 = QHBoxLayout()
-        row1.setSpacing(16)
+        row1.setSpacing(14)
         row1.addWidget(ctrl_cell("ФОРМА", self.shape_seg))
         row1.addWidget(ctrl_cell("РАЗМЕР", self.size_seg))
         cl.addLayout(row1)
 
-        # Row 2: Фон
+        # Row 2: Фон | Чувствительность
         row2 = QHBoxLayout()
-        row2.setSpacing(16)
+        row2.setSpacing(14)
         row2.addWidget(ctrl_cell("ФОН", self.bg_seg))
-        row2.addStretch()
-        cl.addLayout(row2)
 
-        # Row 3: Чувствительность — slider + value label
-        sens_widget = QWidget()
-        sens_vl = QVBoxLayout(sens_widget)
-        sens_vl.setContentsMargins(0, 0, 0, 0)
-        sens_vl.setSpacing(6)
-        sens_cap = QLabel("ЧУВСТВИТЕЛЬНОСТЬ")
-        sens_cap.setObjectName("SectionCap")
-        sens_vl.addWidget(sens_cap)
-
-        sens_hl = QHBoxLayout()
-        sens_hl.setSpacing(10)
-        self.sens_slider = QSlider(Qt.Orientation.Horizontal)
-        self.sens_slider.setRange(1, 10)
+        self.sens_values = [0.7, 1.0, 1.2, 1.5, 2.0]
+        self.sens_seg = SegmentedControl(["0.7", "1.0", "1.2", "1.5", "2.0"])
         saved_sens = self.config.get("visualizer_sensitivity", 1.0)
-        self.sens_slider.setValue(max(1, min(10, round(saved_sens * 5))))
-        self.sens_val_lbl = QLabel(f"{self.sens_slider.value() / 5:.1f}×")
-        self.sens_val_lbl.setObjectName("FieldLbl")
-        self.sens_val_lbl.setFixedWidth(34)
-        self.sens_slider.valueChanged.connect(self._on_sensitivity_changed)
-        sens_hl.addWidget(self.sens_slider, 1)
-        sens_hl.addWidget(self.sens_val_lbl)
-        sens_vl.addLayout(sens_hl)
-        cl.addWidget(sens_widget)
+        try:
+            closest_idx = min(range(len(self.sens_values)), key=lambda i: abs(self.sens_values[i] - saved_sens))
+        except Exception:
+            closest_idx = 1
+        self.sens_seg.setCurrentIndex(closest_idx)
+        self.sens_seg.currentChanged.connect(self._on_sensitivity_changed)
+
+        row2.addWidget(ctrl_cell("ЧУВСТВИТЕЛЬНОСТЬ", self.sens_seg))
+        cl.addLayout(row2)
         lay.addWidget(ctrl)
 
         # ── Color card ──
         color_card = QFrame()
         color_card.setObjectName("Card")
         ccl = QVBoxLayout(color_card)
-        ccl.setContentsMargins(14, 12, 14, 12)
-        ccl.setSpacing(8)
+        ccl.setContentsMargins(16, 10, 16, 10)
+        ccl.setSpacing(6)
         
         color_cap = QLabel("ЦВЕТ")
         color_cap.setObjectName("SectionCap")
@@ -494,9 +475,8 @@ class DashboardWindow(QWidget):
         self.preview_widget.set_size(["xs", "small", "medium", "large", "xl"][idx])
         self._auto_save_visualizer()
 
-    def _on_sensitivity_changed(self, val):
-        sens = val / 5.0
-        self.sens_val_lbl.setText(f"{sens:.1f}×")
+    def _on_sensitivity_changed(self, idx):
+        sens = self.sens_values[idx]
         self.preview_widget.set_sensitivity(sens)
         self._auto_save_visualizer()
 
@@ -513,7 +493,7 @@ class DashboardWindow(QWidget):
         self.config["visualizer_color_preset"] = self.color_selector.currentPreset()
         self.config["visualizer_bg_mode"] = ["solid", "none"][self.bg_seg.currentIndex()]
         self.config["theme"] = "dark"
-        self.config["visualizer_sensitivity"] = self.sens_slider.value() / 5.0
+        self.config["visualizer_sensitivity"] = self.sens_values[self.sens_seg.currentIndex()]
         self.save_callback(self.config)
 
     def _update_hotkey_badge(self):
