@@ -398,6 +398,27 @@ def get_stylesheet(theme="dark", preset_key="mono"):
             color: {primary};
         }}
 
+        /* State badge in Overview header */
+        QLabel#StateBadge {{
+            font-size: 11px;
+            font-weight: 800;
+            color: #10B981;
+            background: rgba(16,185,129,0.15);
+            border-radius: 4px;
+            padding: 2px 8px;
+        }}
+
+        /* Style description / example labels in Recognition tab */
+        QLabel#StyleDescLbl {{
+            font-size: 11px;
+            color: {faint};
+        }}
+        QLabel#StyleExampleLbl {{
+            font-size: 12px;
+            font-weight: 500;
+            color: {muted};
+        }}
+
         /* Scrollbar */
         QScrollArea {{ background: transparent; border: none; }}
         QScrollBar:vertical {{

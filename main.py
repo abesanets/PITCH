@@ -7,7 +7,6 @@ if getattr(sys, 'frozen', False):
 else:
     os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
-import time
 from PyQt6.QtWidgets import QApplication
 from core.config_manager import load_config
 from core import PitchCore, ClipboardManager, LogRedirector, AudioRecorder
@@ -21,40 +20,25 @@ def main():
 
     config = load_config()
 
-    # Create dependencies
-    recorder = AudioRecorder()
+    recorder  = AudioRecorder()
     clipboard = ClipboardManager()
 
-    # Define Groq client factory referencing core's configuration
-    def make_groq_client():
-        from groq import Groq
-        t_client = time.time()
-        client_kwargs = {"api_key": core._config["api_key"]}
-        base_url = core._config.get("groq_base_url", "").strip()
-        if base_url:
-            if base_url.endswith("/openai/v1"):
-                base_url = base_url[:-10]
-                print(f"[Диагностика] Удалён /openai/v1 из base_url (SDK добавляет автоматически)")
-            client_kwargs["base_url"] = base_url
-            print(f"[Диагностика] Используем кастомный base_url: {base_url}")
-        client = Groq(**client_kwargs)
-        print(f"[Диагностика] Groq клиент готов: {time.time() - t_client:.3f}s")
-        return client
+    from core.groq_client import make_client as _make_groq_client
 
-    # Initialize Core
+    def make_groq_client():
+        return _make_groq_client(core._config)
+
     core = PitchCore(
         config=config,
         recorder=recorder,
         groq_client_factory=make_groq_client,
     )
 
-    # Redirect stdout/stderr to log file and UI log signal
-    log_path = os.path.join(os.path.dirname(__file__), "pitch.log")
+    log_path  = os.path.join(os.path.dirname(__file__), "pitch.log")
     redirector = LogRedirector(core.log_message, log_path)
     sys.stdout = redirector
     sys.stderr = redirector
 
-    # Initialize and run UI/Assistant
     assistant = VoiceAssistant(core=core, clipboard=clipboard)
     assistant.run()
 
