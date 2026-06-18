@@ -2,6 +2,54 @@ import sys
 import time
 import keyboard
 
+_WINDOWS = sys.platform == "win32"
+if _WINDOWS:
+    import ctypes
+    _GetAsyncKeyState = ctypes.windll.user32.GetAsyncKeyState
+else:
+    _GetAsyncKeyState = None
+
+def is_physical_key_pressed(key_name: str) -> bool:
+    """
+    Checks if a key is physically pressed. On Windows, uses GetAsyncKeyState
+    to prevent key state desynchronization (stuck keys) for modifiers.
+    """
+    if not _WINDOWS or not _GetAsyncKeyState:
+        try:
+            return keyboard.is_pressed(key_name)
+        except Exception:
+            return False
+
+    key_clean = key_name.strip().lower()
+
+    # Map key names to Windows Virtual Key codes to read current physical hardware state
+    VK_MAP = {
+        'ctrl': [0x11],          # VK_CONTROL
+        'control': [0x11],
+        'left ctrl': [0xA2],     # VK_LCONTROL
+        'right ctrl': [0xA3],    # VK_RCONTROL
+        'shift': [0x10],         # VK_SHIFT
+        'left shift': [0xA0],    # VK_LSHIFT
+        'right shift': [0xA1],   # VK_RSHIFT
+        'alt': [0x12],           # VK_MENU
+        'left alt': [0xA4],      # VK_LMENU
+        'right alt': [0xA5],     # VK_RMENU
+        'alt gr': [0xA5],
+        'windows': [0x5B, 0x5C], # VK_LWIN, VK_RWIN
+        'win': [0x5B, 0x5C],
+        'left windows': [0x5B],
+        'right windows': [0x5C]
+    }
+
+    if key_clean in VK_MAP:
+        # Most significant bit (0x8000) is set if the key is physically down
+        return any(bool(_GetAsyncKeyState(vk) & 0x8000) for vk in VK_MAP[key_clean])
+
+    try:
+        return keyboard.is_pressed(key_clean)
+    except Exception:
+        return False
+
 class ClipboardManager:
     """
     Manages text pasting via Win32 SendInput.
@@ -15,10 +63,10 @@ class ClipboardManager:
         # Wait for physical modifier keys to be released
         timeout = time.time() + (self.MAX_WAIT_MS / 1000.0)
         while time.time() < timeout:
-            if not (keyboard.is_pressed('windows') or 
-                    keyboard.is_pressed('alt') or 
-                    keyboard.is_pressed('ctrl') or 
-                    keyboard.is_pressed('shift')):
+            if not (is_physical_key_pressed('windows') or 
+                    is_physical_key_pressed('alt') or 
+                    is_physical_key_pressed('ctrl') or 
+                    is_physical_key_pressed('shift')):
                 break
             time.sleep(0.05)
 

@@ -9,7 +9,13 @@ def load_history():
     if os.path.exists(HISTORY_FILE):
         try:
             with open(HISTORY_FILE, "r", encoding="utf-8") as f:
-                return json.load(f)
+                data = json.load(f)
+                if isinstance(data, list):
+                    # Filter out any entries with empty/whitespace-only cleaned_text
+                    filtered = [entry for entry in data if entry.get("cleaned_text", "").strip()]
+                    if len(filtered) != len(data):
+                        save_history(filtered)
+                    return filtered
         except Exception:
             pass
     return []
@@ -22,11 +28,14 @@ def save_history(history):
         print(f"Error saving history: {e}")
 
 def add_history_entry(model, raw_text, cleaned_text, whisper_latency, llm_latency):
+    if not cleaned_text or not cleaned_text.strip():
+        return None
+
     history = load_history()
     
     # Calculate word and character count
-    word_count = len(cleaned_text.split()) if cleaned_text else 0
-    char_count = len(cleaned_text) if cleaned_text else 0
+    word_count = len(cleaned_text.split())
+    char_count = len(cleaned_text)
     
     entry = {
         "timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),

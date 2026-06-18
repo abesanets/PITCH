@@ -8,6 +8,7 @@ from PyQt6.QtCore import QObject, pyqtSignal
 from .audio_recorder import AudioRecorder
 from .groq_worker import GroqWorker
 from . import history_manager
+from .clipboard import is_physical_key_pressed
 
 class PitchCore(QObject):
     """
@@ -149,7 +150,7 @@ class PitchCore(QObject):
             return False
         try:
             for part in parts:
-                if not keyboard.is_pressed(part):
+                if not is_physical_key_pressed(part):
                     return False
             
             # Exclusion check for other modifier keys to avoid conflicts
@@ -170,7 +171,7 @@ class PitchCore(QObject):
             for mod_name, aliases in modifiers.items():
                 if mod_name not in expected_mods:
                     for alias in aliases:
-                        if keyboard.is_pressed(alias):
+                        if is_physical_key_pressed(alias):
                             return False
             return True
         except Exception:
