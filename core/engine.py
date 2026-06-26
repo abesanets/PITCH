@@ -18,6 +18,9 @@ class PitchCore(QObject):
     state_changed = pyqtSignal(str)
     processing_done = pyqtSignal(str)
 
+    _request_start_recording = pyqtSignal(str)
+    _request_stop_recording = pyqtSignal()
+
     def __init__(
         self,
         config: dict,
@@ -42,9 +45,14 @@ class PitchCore(QObject):
         
         self._is_recording = False
         self._is_processing = False
+        self._hook_recording = False
         self._recording_start_time = None
         self._current_mode = None
         self._active_hotkey = None
+        
+        # Connect signals for thread-safe audio control from keyboard hook thread
+        self._request_start_recording.connect(self.start_recording)
+        self._request_stop_recording.connect(self.stop_recording)
         
         # Event-driven keyboard hook
         self.__monitor_running = True
@@ -82,6 +90,7 @@ class PitchCore(QObject):
         self._recorder.start_recording(volume_callback=self._volume_callback)
 
     def stop_recording(self) -> None:
+        self._hook_recording = False
         if not self._is_recording:
             return
         self._is_recording = False
@@ -190,21 +199,24 @@ class PitchCore(QObject):
             h1 = "ctrl+windows"
 
         try:
-            if not self._is_recording:
+            if not self._hook_recording:
                 # Check if either hotkey is pressed
                 if self._is_hotkey_active(h1):
                     self._active_hotkey = 'hotkey_1'
+                    self._hook_recording = True
                     mode = self._config.get("mode_1", "default")
-                    self.start_recording(mode)
+                    self._request_start_recording.emit(mode)
                 elif h2 and self._is_hotkey_active(h2):
                     self._active_hotkey = 'hotkey_2'
+                    self._hook_recording = True
                     mode = self._config.get("mode_2", "translate_en")
-                    self.start_recording(mode)
+                    self._request_start_recording.emit(mode)
             else:
                 # Recording is active. Check if the triggering hotkey has been released
                 target_hotkey_str = h1 if self._active_hotkey == 'hotkey_1' else h2
                 if not target_hotkey_str or not self._is_hotkey_active(target_hotkey_str):
-                    self.stop_recording()
+                    self._hook_recording = False
+                    self._request_stop_recording.emit()
                     self._active_hotkey = None
         except Exception as e:
             print(f"Hotkey event handler error: {e}")
