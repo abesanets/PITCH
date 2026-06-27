@@ -214,10 +214,32 @@ class PitchCore(QObject):
             else:
                 # Recording is active. Check if the triggering hotkey has been released
                 target_hotkey_str = h1 if self._active_hotkey == 'hotkey_1' else h2
-                if not target_hotkey_str or not self._is_hotkey_active(target_hotkey_str):
+                if not target_hotkey_str:
                     self._hook_recording = False
                     self._request_stop_recording.emit()
                     self._active_hotkey = None
+                elif event.event_type == "up":
+                    def normalize_key(name: str) -> str:
+                        if not name:
+                            return ""
+                        name = name.lower().strip()
+                        if name in ("ctrl", "left ctrl", "right ctrl", "control"):
+                            return "ctrl"
+                        if name in ("shift", "left shift", "right shift"):
+                            return "shift"
+                        if name in ("alt", "left alt", "right alt", "alt gr"):
+                            return "alt"
+                        if name in ("windows", "win", "left windows", "right windows"):
+                            return "windows"
+                        return name
+
+                    hotkey_parts = {normalize_key(p) for p in target_hotkey_str.split("+")}
+                    released_key = normalize_key(event.name)
+                    if released_key in hotkey_parts:
+                        if not self._is_hotkey_active(target_hotkey_str):
+                            self._hook_recording = False
+                            self._request_stop_recording.emit()
+                            self._active_hotkey = None
         except Exception as e:
             print(f"Hotkey event handler error: {e}")
 
