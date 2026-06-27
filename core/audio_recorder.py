@@ -42,13 +42,27 @@ class AudioRecorder:
         with self.lock:
             self.audio_data = []
 
-        try:
-            self._open_stream()
-        except Exception:
-            self.close()
-            self._open_stream()
-
+        # Flag set before stream opens so callback captures data immediately once active
         self.recording = True
+
+        def _open_async():
+            try:
+                self._open_stream()
+            except Exception:
+                try:
+                    self.close()
+                except Exception:
+                    pass
+                try:
+                    self._open_stream()
+                except Exception:
+                    self.recording = False
+                    return
+            # If recording was stopped before stream finished opening, close it
+            if not self.recording:
+                self.close()
+
+        threading.Thread(target=_open_async, daemon=True).start()
 
     def stop_recording(self):
         self.recording = False
