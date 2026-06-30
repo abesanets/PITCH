@@ -19,6 +19,7 @@ def load_config():
         "visualizer_size": "medium",
         "visualizer_sensitivity": 1.0,
         "use_raw_whisper": False,
+        "whisper_model": "auto",
         "groq_base_url": "",
         "filter_hallucinations": True,
         "min_recording_duration": 0.5,

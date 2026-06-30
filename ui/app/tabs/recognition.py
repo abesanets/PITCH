@@ -85,6 +85,25 @@ def _build_whisper_card(d) -> QFrame:
     d.raw_whisper_toggle.toggled.connect(d._auto_save_recognition)
     _add_toggle_row(wcl, "Сырой Whisper", "Быстрее, но без улучшения качества LLM", d.raw_whisper_toggle)
 
+    d.whisper_model_seg = SegmentedControl(["Авто", "Turbo", "Large v3"])
+    model_map = {"auto": 0, "whisper-large-v3-turbo": 1, "whisper-large-v3": 2}
+    saved_model = d.config.get("whisper_model", "auto")
+    d.whisper_model_seg.setCurrentIndex(model_map.get(saved_model, 0))
+    d.whisper_model_seg.currentChanged.connect(d._auto_save_recognition)
+
+    wm_cell = QWidget()
+    wm_vl = QVBoxLayout(wm_cell)
+    wm_vl.setContentsMargins(0, 0, 0, 0)
+    wm_vl.setSpacing(6)
+    wm_lbl = QLabel("МОДЕЛЬ WHISPER ПО УМОЛЧАНИЮ")
+    wm_lbl.setObjectName("SectionCap")
+    wm_sub = QLabel("Turbo — быстрее, Large v3 — точнее")
+    wm_sub.setObjectName("DetailMeta")
+    wm_vl.addWidget(wm_lbl)
+    wm_vl.addWidget(wm_sub)
+    wm_vl.addWidget(d.whisper_model_seg)
+    wcl.addWidget(wm_cell)
+
     return card
 
 
@@ -222,5 +241,8 @@ def auto_save_recognition(d) -> None:
     d.config["use_raw_whisper"] = d.raw_whisper_toggle.isChecked()
     d.config["filter_hallucinations"] = d.hallucination_filter_toggle.isChecked()
     d.config["min_recording_duration"] = _DUR_VALUES[d.min_duration_seg.currentIndex()]
+    if hasattr(d, "whisper_model_seg"):
+        _MODEL_VALUES = ["auto", "whisper-large-v3-turbo", "whisper-large-v3"]
+        d.config["whisper_model"] = _MODEL_VALUES[d.whisper_model_seg.currentIndex()]
     d.config["custom_formatting_style"] = d.custom_style_edit.toPlainText().strip()
     d.save_callback(d.config)

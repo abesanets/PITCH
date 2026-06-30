@@ -203,7 +203,7 @@ class DashboardWindow(QWidget):
         lay.addStretch()
 
 
-        ver_lbl = QLabel("v1.7")
+        ver_lbl = QLabel("v1.8")
         ver_lbl.setObjectName("VersionLbl")
         lay.addWidget(ver_lbl)
 
@@ -312,7 +312,7 @@ class DashboardWindow(QWidget):
             if w:
                 w.set_theme(theme)
 
-        for seg_name in ("min_duration_seg", "shape_seg", "size_seg", "bg_seg", "sens_seg"):
+        for seg_name in ("min_duration_seg", "whisper_model_seg", "shape_seg", "size_seg", "bg_seg", "sens_seg"):
             w = getattr(self, seg_name, None)
             if w:
                 w.set_theme(theme)

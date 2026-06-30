@@ -23,6 +23,7 @@ class GroqWorker(QThread):
             api_key = self.config.get("api_key", "")
             formatting_style = self.config.get("formatting_style", "default")
             custom_formatting_style = self.config.get("custom_formatting_style", "")
+            whisper_model = self.config.get("whisper_model", "auto")
             
             result = process_audio_pipeline(
                 self.file_path,
@@ -33,7 +34,8 @@ class GroqWorker(QThread):
                 base_url=base_url,
                 filter_hallucinations=filter_hall,
                 formatting_style=formatting_style,
-                custom_formatting_style=custom_formatting_style
+                custom_formatting_style=custom_formatting_style,
+                whisper_model=whisper_model
             )
             
             if isinstance(result, dict):
@@ -44,6 +46,6 @@ class GroqWorker(QThread):
                 if isinstance(result, str) and result.startswith("Error:"):
                     self.error_occurred.emit(result)
                 else:
-                    self.result_ready.emit({"text": str(result), "raw_text": str(result), "whisper_latency": 0.0, "llm_latency": 0.0})
+                    self.result_ready.emit({"text": result, "raw_text": result, "whisper_latency": 0.0, "llm_latency": 0.0})
         except Exception as e:
             self.error_occurred.emit(str(e))

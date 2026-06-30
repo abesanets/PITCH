@@ -92,8 +92,13 @@ def strip_reasoning_tags(text):
     text = re.sub(r"(?is)</think>", "", text)
     return text.strip()
 
-def transcribe_with_fallback(client, file_path):
-    models = ["whisper-large-v3-turbo", "whisper-large-v3"]
+def transcribe_with_fallback(client, file_path, whisper_model="auto"):
+    if whisper_model == "whisper-large-v3-turbo":
+        models = ["whisper-large-v3-turbo", "whisper-large-v3"]
+    elif whisper_model == "whisper-large-v3":
+        models = ["whisper-large-v3", "whisper-large-v3-turbo"]
+    else:
+        models = ["whisper-large-v3-turbo", "whisper-large-v3"]
     last_error = None
     for model in models:
         try:
@@ -154,7 +159,7 @@ def process_text_with_fallback(client, messages, text_model):
             time.sleep(0.1)
     raise Exception(f"Все текстовые модели недоступны. Ошибка: {last_error}")
 
-def process_audio_pipeline(file_path, api_key, text_model="llama-3.3-70b-versatile", client=None, use_raw_whisper=False, base_url="", filter_hallucinations=True, formatting_style="default", custom_formatting_style=""):
+def process_audio_pipeline(file_path, api_key, text_model="llama-3.3-70b-versatile", client=None, use_raw_whisper=False, base_url="", filter_hallucinations=True, formatting_style="default", custom_formatting_style="", whisper_model="auto"):
     """
     Transcribes audio and formats it using Groq.
     If use_raw_whisper is True, returns raw Whisper transcription without LLM processing.
@@ -179,7 +184,7 @@ def process_audio_pipeline(file_path, api_key, text_model="llama-3.3-70b-versati
         
         # 1. Transcribe
         whisper_start = time.time()
-        raw_text = transcribe_with_fallback(client, file_path)
+        raw_text = transcribe_with_fallback(client, file_path, whisper_model=whisper_model)
         whisper_time = time.time() - whisper_start
         
         if not raw_text.strip():
