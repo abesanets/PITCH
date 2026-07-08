@@ -9,16 +9,19 @@ if _WINDOWS:
 else:
     _GetAsyncKeyState = None
 
+from .keyboard_hook import is_hook_key_pressed
+
 def is_physical_key_pressed(key_name: str) -> bool:
     """
-    Checks if a key is physically pressed. On Windows, uses GetAsyncKeyState
-    to prevent key state desynchronization (stuck keys) for modifiers.
+    Checks if a key is physically pressed. On Windows, uses our keyboard hook state
+    to prevent key state desynchronization (stuck keys) for blocked modifiers.
     """
-    if not _WINDOWS or not _GetAsyncKeyState:
-        try:
-            return keyboard.is_pressed(key_name)
-        except Exception:
-            return False
+    if _WINDOWS:
+        return is_hook_key_pressed(key_name)
+    try:
+        return keyboard.is_pressed(key_name)
+    except Exception:
+        return False
 
     key_clean = key_name.strip().lower()
 

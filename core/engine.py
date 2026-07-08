@@ -1,7 +1,8 @@
 import os
 import time
+import sys
 import threading
-from typing import Callable
+from typing import Callable, Any
 import keyboard
 from PyQt6.QtCore import QObject, pyqtSignal
 
@@ -9,6 +10,7 @@ from .audio_recorder import AudioRecorder
 from .groq_worker import GroqWorker
 from . import history_manager
 from .clipboard import is_physical_key_pressed
+from .keyboard_hook import WindowsKeyboardHook
 
 class PitchCore(QObject):
     """
@@ -49,6 +51,7 @@ class PitchCore(QObject):
         self._recording_start_time = None
         self._current_mode = None
         self._active_hotkey = None
+        self._keyboard_hook: Any = None
         
         # Connect signals for thread-safe audio control from keyboard hook thread
         self._request_start_recording.connect(self.start_recording)
@@ -56,7 +59,11 @@ class PitchCore(QObject):
         
         # Event-driven keyboard hook
         self.__monitor_running = True
-        self._keyboard_hook = keyboard.hook(self._on_keyboard_event)
+        if sys.platform == "win32":
+            self._keyboard_hook = WindowsKeyboardHook(self._on_keyboard_event)
+            self._keyboard_hook.start()
+        else:
+            self._keyboard_hook = keyboard.hook(self._on_keyboard_event)
 
     @property
     def _monitor_running(self) -> bool:
@@ -67,7 +74,10 @@ class PitchCore(QObject):
         self.__monitor_running = value
         if not value and hasattr(self, '_keyboard_hook') and self._keyboard_hook is not None:
             try:
-                keyboard.unhook(self._keyboard_hook)
+                if sys.platform == "win32":
+                    self._keyboard_hook.stop()
+                else:
+                    keyboard.unhook(self._keyboard_hook)
                 self._keyboard_hook = None
             except Exception:
                 pass

@@ -8,8 +8,8 @@ from PyQt6.QtCore import Qt
 from ...widgets import ToggleSwitch
 
 
-_HOTKEY_OPTIONS_1 = ["ctrl+windows", "shift+windows", "ctrl+shift+windows", "left alt+space", "f8"]
-_HOTKEY_OPTIONS_2 = ["shift+windows", "ctrl+windows", "ctrl+shift+windows", "left alt+space", "f8"]
+_HOTKEY_OPTIONS_1 = ["ctrl+windows", "shift+windows", "ctrl+shift+windows", "ctrl+alt", "ctrl+shift", "ctrl+alt+space", "ctrl+shift+space", "left alt+space", "f8"]
+_HOTKEY_OPTIONS_2 = ["shift+windows", "ctrl+windows", "ctrl+shift+windows", "ctrl+alt", "ctrl+shift", "ctrl+alt+space", "ctrl+shift+space", "left alt+space", "f8"]
 _MODE_OPTIONS     = ["Редактор", "Чат", "Английский", "Кастом"]
 _MODE_TO_KEY      = {"Редактор": "default", "Чат": "chat", "Английский": "translate_en", "Кастом": "custom"}
 _KEY_TO_MODE      = {v: k for k, v in _MODE_TO_KEY.items()}
