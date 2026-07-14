@@ -203,7 +203,7 @@ class DashboardWindow(QWidget):
         lay.addStretch()
 
 
-        ver_lbl = QLabel("v1.9")
+        ver_lbl = QLabel("v1.10")
         ver_lbl.setObjectName("VersionLbl")
         lay.addWidget(ver_lbl)
 

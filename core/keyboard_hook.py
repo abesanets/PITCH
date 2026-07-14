@@ -14,6 +14,13 @@ _key_states = {
     'alt': False
 }
 
+_last_hook_update = {
+    'ctrl': 0.0,
+    'windows': 0.0,
+    'shift': 0.0,
+    'alt': 0.0
+}
+
 def is_hook_key_pressed(key_name: str) -> bool:
     if not _WINDOWS:
         return False
@@ -26,6 +33,32 @@ def is_hook_key_pressed(key_name: str) -> bool:
         name = 'shift'
     elif 'alt' in name:
         name = 'alt'
+        
+    import ctypes
+    import time
+    user32 = ctypes.windll.user32
+    VK_MAP = {
+        'ctrl': [0x11, 0xA2, 0xA3],      # VK_CONTROL, VK_LCONTROL, VK_RCONTROL
+        'windows': [0x5B, 0x5C],         # VK_LWIN, VK_RWIN
+        'shift': [0x10, 0xA0, 0xA1],     # VK_SHIFT, VK_LSHIFT, VK_RSHIFT
+        'alt': [0x12, 0xA4, 0xA5]        # VK_MENU, VK_LMENU, VK_RMENU
+    }
+    
+    if name in VK_MAP:
+        is_pressed_phys = any(bool(user32.GetAsyncKeyState(vk) & 0x8000) for vk in VK_MAP[name])
+        if is_pressed_phys:
+            _key_states[name] = True
+            return True
+        else:
+            # Если GetAsyncKeyState считает, что клавиша не нажата,
+            # мы доверяем этому только если с последнего хук-события для этой клавиши прошло более 100мс.
+            # Иначе возвращаем последнее состояние из хука, чтобы избежать гонки.
+            if time.time() - _last_hook_update.get(name, 0.0) > 0.1:
+                _key_states[name] = False
+                return False
+            else:
+                return _key_states.get(name, False)
+        
     return _key_states.get(name, False)
 
 class MockEvent:
@@ -132,6 +165,7 @@ class WindowsKeyboardHook:
                 # Update our global state tracking
                 if key_name and (is_down or is_up):
                     _key_states[key_name] = is_down
+                    _last_hook_update[key_name] = time.time()
                 
                 # If it's a Windows key event
                 if vk in (VK_LWIN, VK_RWIN):
