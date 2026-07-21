@@ -60,7 +60,10 @@ class PitchCore(QObject):
         # Event-driven keyboard hook
         self.__monitor_running = True
         if sys.platform == "win32":
-            self._keyboard_hook = WindowsKeyboardHook(self._on_keyboard_event)
+            self._keyboard_hook = WindowsKeyboardHook(
+                self._on_keyboard_event,
+                is_processing_callback=lambda: self._is_processing
+            )
             self._keyboard_hook.start()
         else:
             self._keyboard_hook = keyboard.hook(self._on_keyboard_event)
@@ -196,8 +199,25 @@ class PitchCore(QObject):
         except Exception:
             return False
 
+    def cancel_processing(self) -> None:
+        if not self._is_processing:
+            return
+        print("[Отмена] Обработка отменена пользователем (Escape).")
+        self._is_processing = False
+        if hasattr(self, '_worker') and self._worker is not None:
+            try:
+                self._worker.cancel()
+            except Exception:
+                pass
+        self.state_changed.emit("idle")
+
     def _on_keyboard_event(self, event) -> None:
-        if not self.__monitor_running or not self._config.get("api_key") or self._is_processing:
+        if not self.__monitor_running or not self._config.get("api_key"):
+            return
+
+        if self._is_processing:
+            if event.name == "escape" and event.event_type == "down":
+                self.cancel_processing()
             return
 
         h1 = self._config.get("hotkey_1", "ctrl+windows")
@@ -254,10 +274,11 @@ class PitchCore(QObject):
             print(f"Hotkey event handler error: {e}")
 
     def _on_worker_result(self, result: dict) -> None:
-        text_model = self._config.get("text_model", "llama-3.3-70b-versatile")
+        configured_model = self._config.get("text_model", "llama-3.3-70b-versatile")
+        actual_model = result.get("model_used", configured_model)
         try:
             history_manager.add_history_entry(
-                model=text_model,
+                model=actual_model,
                 raw_text=result["raw_text"],
                 cleaned_text=result["text"],
                 whisper_latency=result["whisper_latency"],

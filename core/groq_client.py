@@ -89,10 +89,20 @@ def strip_reasoning_tags(text):
     if not text:
         return text
 
-    text = re.sub(r"(?is)<think\b[^>]*>.*?</think>", "", text)
-    text = re.sub(r"(?is)^\s*<think\b[^>]*>.*$", "", text)
-    text = re.sub(r"(?is)</think>", "", text)
-    return text.strip()
+    # Remove completed <think>...</think> blocks
+    stripped = re.sub(r"(?is)<think\b[^>]*>.*?</think>", "", text).strip()
+    
+    # If stripping removed everything (e.g. model output everything inside <think>),
+    # extract the content inside <think> tags rather than returning empty
+    if not stripped and "<think" in text.lower():
+        match = re.search(r"(?is)<think\b[^>]*>(.*?)(?:</think>|$)", text)
+        if match:
+            stripped = match.group(1).strip()
+
+    # Clean up any leftover unclosed tags
+    stripped = re.sub(r"(?is)^\s*<think\b[^>]*>", "", stripped)
+    stripped = re.sub(r"(?is)</think>", "", stripped)
+    return stripped.strip()
 
 def transcribe_with_fallback(client, file_path, whisper_model="auto"):
     if whisper_model == "whisper-large-v3-turbo":
@@ -130,10 +140,8 @@ def process_text_with_fallback(client, messages, text_model):
     models = [
         text_model, 
         "llama-3.3-70b-versatile", 
-        "meta-llama/llama-4-scout-17b-16e-instruct",
-        "qwen/qwen3-32b", 
-        "openai/gpt-oss-20b",
         "llama-3.1-8b-instant",
+        "openai/gpt-oss-20b",
         "openai/gpt-oss-120b"
     ]
     # Remove duplicates but preserve order
@@ -150,11 +158,17 @@ def process_text_with_fallback(client, messages, text_model):
                 max_tokens=2048,
             )
             print(f"[Диагностика] LLM API ({model}): {time.time() - t_api:.3f}s")
-            result = strip_reasoning_tags(completion.choices[0].message.content)
+            raw_content = completion.choices[0].message.content or ""
+            result = strip_reasoning_tags(raw_content)
             if result.startswith('"""') and result.endswith('"""'):
                 result = result[3:-3].strip()
             result = strip_reasoning_tags(result)
-            return result
+            
+            # Fallback to raw text if model return turned out empty after formatting
+            if not result and raw_content.strip():
+                result = raw_content.strip()
+
+            return result, model
         except Exception as e:
             print(f"[Предупреждение] Текстовая модель {model} не справилась: {e}. Пробуем следующую...")
             last_error = e
@@ -265,16 +279,17 @@ def process_audio_pipeline(file_path, api_key, text_model="llama-3.3-70b-versati
 
         # 2. Process Text
         llm_start = time.time()
-        cleaned_text = process_text_with_fallback(client, messages, text_model)
+        cleaned_text, actual_model = process_text_with_fallback(client, messages, text_model)
         llm_time = time.time() - llm_start
         
         pipeline_total = time.time() - pipeline_start
-        print(f"[LLM] Обработка текста завершена за {llm_time:.2f}s с моделью {text_model}")
+        print(f"[LLM] Обработка текста завершена за {llm_time:.2f}s с моделью {actual_model}")
         print(f"[Диагностика] === ИТОГО pipeline: {pipeline_total:.2f}s (Whisper: {whisper_time:.2f}s + LLM: {llm_time:.2f}s) ===")
         
         return {
             "text": cleaned_text,
             "raw_text": raw_text,
+            "model_used": actual_model,
             "whisper_latency": whisper_time,
             "llm_latency": llm_time
         }

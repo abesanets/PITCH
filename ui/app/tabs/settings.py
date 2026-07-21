@@ -16,8 +16,6 @@ _KEY_TO_MODE      = {v: k for k, v in _MODE_TO_KEY.items()}
 _TEXT_MODELS      = [
     "llama-3.3-70b-versatile",
     "llama-3.1-8b-instant",
-    "qwen/qwen3-32b",
-    "meta-llama/llama-4-scout-17b-16e-instruct",
     "openai/gpt-oss-20b",
     "openai/gpt-oss-120b",
 ]

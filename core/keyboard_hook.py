@@ -67,8 +67,9 @@ class MockEvent:
         self.name = name
 
 class WindowsKeyboardHook:
-    def __init__(self, callback: Callable[[MockEvent], None]):
+    def __init__(self, callback: Callable[[MockEvent], None], is_processing_callback: Callable[[], bool] | None = None):
         self.callback = callback
+        self.is_processing_callback = is_processing_callback
         self.thread = None
         self.hook_id = None
         self.running = False
@@ -108,6 +109,7 @@ class WindowsKeyboardHook:
         VK_RCONTROL = 0xA3
         VK_SHIFT = 0x10
         VK_MENU = 0x12  # Alt
+        VK_ESCAPE = 0x1B
 
         class KBDLLHOOKSTRUCT(ctypes.Structure):
             _fields_ = [
@@ -149,6 +151,20 @@ class WindowsKeyboardHook:
                 is_down = wParam in (WM_KEYDOWN, WM_SYSKEYDOWN)
                 is_up = wParam in (WM_KEYUP, WM_SYSKEYUP)
                 
+                # Intercept Escape when processing
+                if vk == VK_ESCAPE:
+                    is_proc = False
+                    if self.is_processing_callback:
+                        try:
+                            is_proc = self.is_processing_callback()
+                        except Exception:
+                            is_proc = False
+                    
+                    if is_proc:
+                        if is_down:
+                            self.callback(MockEvent("down", "escape"))
+                        return 1  # Block Escape from passing to target app during processing
+
                 # Map virtual key code to a friendly name for the engine
                 key_name = ""
                 if vk in (VK_LWIN, VK_RWIN):

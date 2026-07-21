@@ -13,6 +13,10 @@ class GroqWorker(QThread):
         self.file_path = file_path
         self.config = config
         self.groq_client = groq_client
+        self._is_cancelled = False
+
+    def cancel(self) -> None:
+        self._is_cancelled = True
 
     def run(self) -> None:
         try:
@@ -38,6 +42,9 @@ class GroqWorker(QThread):
                 whisper_model=whisper_model
             )
             
+            if self._is_cancelled:
+                return
+
             if isinstance(result, dict):
                 self.result_ready.emit(result)
             else:
@@ -48,4 +55,5 @@ class GroqWorker(QThread):
                 else:
                     self.result_ready.emit({"text": result, "raw_text": result, "whisper_latency": 0.0, "llm_latency": 0.0})
         except Exception as e:
-            self.error_occurred.emit(str(e))
+            if not self._is_cancelled:
+                self.error_occurred.emit(str(e))
