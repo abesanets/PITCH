@@ -12,4 +12,6 @@ pitch.log
 temp/
 config.json
 history.json
+.agents/
+
 
