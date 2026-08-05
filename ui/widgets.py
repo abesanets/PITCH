@@ -8,23 +8,22 @@ from .styles_data import VISUALIZER_PRESETS
 
 
 class ToggleSwitch(QWidget):
-    """Custom toggle switch widget"""
+    """Custom pixel toggle switch widget"""
     toggled = pyqtSignal(bool)
 
-    # Indigo/violet accent palette matching the redesigned theme
-    _COL_ON   = QColor(223, 206, 186)   # sand
-    _COL_OFF  = QColor(78, 56, 43)      # dark chocolate
+    _COL_ON   = QColor(240, 240, 245)
+    _COL_OFF  = QColor(24, 24, 34)
 
     def __init__(self, parent=None, checked=False):
         super().__init__(parent)
-        self.setFixedSize(40, 22)
+        self.setFixedSize(42, 22)
         self.setCursor(Qt.CursorShape.PointingHandCursor)
         self._checked = checked
         self._handle_pos = 1.0 if checked else 0.0
         self._theme = "dark"
         self._anim = QPropertyAnimation(self, b"handle_position", self)
-        self._anim.setDuration(160)
-        self._anim.setEasingCurve(QEasingCurve.Type.InOutCubic)
+        self._anim.setDuration(120)
+        self._anim.setEasingCurve(QEasingCurve.Type.Linear)
 
     def get_handle_position(self): return self._handle_pos
     def set_handle_position(self, v): self._handle_pos = v; self.update()
@@ -35,7 +34,6 @@ class ToggleSwitch(QWidget):
         self._checked = v; self._handle_pos = 1.0 if v else 0.0; self.update()
     def set_theme(self, t): self._theme = t; self.update()
 
-    # Keep signature compatible with old call sites — ignored now
     def set_colors(self, c1, c2): pass
 
     def mousePressEvent(self, e):
@@ -47,25 +45,29 @@ class ToggleSwitch(QWidget):
 
     def paintEvent(self, e):
         p = QPainter(self)
-        p.setRenderHint(QPainter.RenderHint.Antialiasing)
+        p.setRenderHint(QPainter.RenderHint.Antialiasing, False)
         w, h = self.width(), self.height()
-        r = h / 2
 
-        track = _lerp_color(self._COL_OFF, self._COL_ON, self._handle_pos)
-        p.setBrush(QBrush(track))
-        p.setPen(Qt.PenStyle.NoPen)
-        p.drawRoundedRect(QRectF(0, 0, w, h), r, r)
+        # Dark pixel track background
+        track_col = _lerp_color(QColor(24, 24, 34), QColor(40, 40, 59), self._handle_pos)
+        p.setBrush(QBrush(track_col))
+        p.setPen(QPen(QColor(56, 56, 77), 2))
+        p.drawRect(QRectF(1, 1, w - 2, h - 2))
 
-        m = 3
+        m = 2
         d = h - m * 2
-        x = m + self._handle_pos * (w - d - m * 2)
-        p.setBrush(QBrush(QColor(255, 255, 255)))
-        p.drawEllipse(QRectF(x, m, d, d))
+        max_x = w - d - m
+        x = m + self._handle_pos * (max_x - m)
+        handle_col = _lerp_color(QColor(90, 90, 114), QColor(240, 240, 245), self._handle_pos)
+        p.setBrush(QBrush(handle_col))
+        p.setPen(QPen(QColor(17, 17, 21), 1))
+        p.drawRect(QRectF(x, m, d, d))
         p.end()
 
 
+
 class SegmentedControl(QWidget):
-    """Segmented control widget (pill-track style)"""
+    """Segmented control widget (Pixel rect style)"""
     currentChanged = pyqtSignal(int)
 
     def __init__(self, options, parent=None):
@@ -75,9 +77,9 @@ class SegmentedControl(QWidget):
         self._theme = "dark"
         self._buttons = []
         self.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
-        self.setFixedHeight(32)
+        self.setFixedHeight(34)
         self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
-        self.setStyleSheet("SegmentedControl { background: #4E382B; border-radius: 16px; }")
+        self.setStyleSheet("SegmentedControl { background: #181822; border: 2px solid #38384d; border-radius: 0px; }")
 
         lay = QHBoxLayout(self)
         lay.setContentsMargins(2, 2, 2, 2)
@@ -85,7 +87,7 @@ class SegmentedControl(QWidget):
         for i, text in enumerate(options):
             btn = QPushButton(text)
             btn.setCursor(Qt.CursorShape.PointingHandCursor)
-            btn.setFixedHeight(28)
+            btn.setFixedHeight(26)
             btn.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
             btn.clicked.connect(lambda _, idx=i: self._on_click(idx))
             lay.addWidget(btn)
@@ -101,29 +103,28 @@ class SegmentedControl(QWidget):
     def currentIndex(self): return self._current
     def setCurrentIndex(self, idx): self._current = idx; self._update_styles()
     def set_theme(self, t): self._theme = t; self._update_styles()
-    # Keep signature compatible — accent is now fixed, arg ignored
     def set_accent(self, primary_hex): pass
 
     def _update_styles(self):
-        active_bg   = "#DFCEBA"
-        active_txt  = "#281B15"
+        active_bg   = "#f0f0f5"
+        active_txt  = "#111115"
         idle_bg     = "transparent"
-        idle_txt    = "#D4C5B9"
-        hover_bg    = "rgba(255,255,255,0.06)"
-        hover_txt   = "#F5ECE3"
+        idle_txt    = "#9090a2"
+        hover_bg    = "rgba(255,255,255,0.08)"
+        hover_txt   = "#ffffff"
 
         for i, btn in enumerate(self._buttons):
             if i == self._current:
                 btn.setStyleSheet(
                     f"QPushButton {{ background:{active_bg}; color:{active_txt}; "
-                    f"border:none; border-radius:14px; "
-                    f"font-weight:700; font-size:11px; padding:0 14px; }}"
+                    f"border: 1px solid #ffffff; border-radius:0px; "
+                    f"font-weight:700; font-size:11px; padding:0 12px; }}"
                 )
             else:
                 btn.setStyleSheet(
                     f"QPushButton {{ background:{idle_bg}; color:{idle_txt}; "
-                    f"border:none; border-radius:14px; "
-                    f"font-weight:600; font-size:11px; padding:0 14px; }} "
+                    f"border: none; border-radius:0px; "
+                    f"font-weight:700; font-size:11px; padding:0 12px; }} "
                     f"QPushButton:hover {{ color:{hover_txt}; background:{hover_bg}; }}"
                 )
 
@@ -131,7 +132,7 @@ class SegmentedControl(QWidget):
 
 
 class ColorPresetSelector(QWidget):
-    """Color preset selector (dots-only style)"""
+    """Color preset selector (Pixel squares style)"""
     presetChanged = pyqtSignal(str)
 
     def __init__(self, parent=None):
@@ -141,7 +142,7 @@ class ColorPresetSelector(QWidget):
         self.setFixedHeight(42)
         self.setCursor(Qt.CursorShape.PointingHandCursor)
         self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
-        self._order = ["mono", "chocolate", "ocean", "aurora", "neon", "sunset", "lavender", "rose", "forest"]
+        self._order = ["mono", "matrix", "cyber", "amber", "synth", "plasma", "acid", "ice", "void"]
 
     def currentPreset(self): return self._current
     def setCurrentPreset(self, k): self._current = k; self.update()
@@ -162,42 +163,43 @@ class ColorPresetSelector(QWidget):
 
     def paintEvent(self, e):
         p = QPainter(self)
-        p.setRenderHint(QPainter.RenderHint.Antialiasing)
+        p.setRenderHint(QPainter.RenderHint.Antialiasing, False)
         n = len(self._order)
         total = n * 44
         sx = (self.width() - total) / 2
 
-        # Draw unified track container
-        track_rect = QRectF(sx - 12, 0, total + 24, 42)
-        p.setBrush(QBrush(QColor(78, 56, 43)))
-        p.setPen(Qt.PenStyle.NoPen)
-        p.drawRoundedRect(track_rect, 21, 21)
+        # Draw unified pixel track container
+        track_rect = QRectF(sx - 12, 2, total + 24, 38)
+        p.setBrush(QBrush(QColor(24, 24, 34)))
+        p.setPen(QPen(QColor(56, 56, 77), 2))
+        p.drawRect(track_rect)
 
         for i, key in enumerate(self._order):
             cx = sx + i * 44 + 22
             cy = 21
-            r = 13
+            size = 22
+            rx = cx - size / 2
+            ry = cy - size / 2
             
             preset = VISUALIZER_PRESETS[key]
             colors = preset["waves"]
             c1, c2, c3 = colors[0][self._theme], colors[1][self._theme], colors[2][self._theme]
             
-            # Active selection outline ring
+            # Active selection pixel outline frame
             if key == self._current:
-                p.setPen(QPen(QColor(245, 236, 227), 2.0))
+                p.setPen(QPen(QColor(240, 240, 245), 2.0))
                 p.setBrush(Qt.BrushStyle.NoBrush)
-                p.drawEllipse(QPointF(cx, cy), r + 3, r + 3)
+                p.drawRect(QRectF(rx - 4, ry - 4, size + 8, size + 8))
 
-            # Color dot
-            grad = QLinearGradient(cx - r, cy - r, cx + r, cy + r)
+            # Color square chip
+            grad = QLinearGradient(rx, ry, rx + size, ry + size)
             grad.setColorAt(0.0, QColor(c1.red(), c1.green(), c1.blue(), 230))
             grad.setColorAt(0.5, QColor(c2.red(), c2.green(), c2.blue(), 210))
             grad.setColorAt(1.0, QColor(c3.red(), c3.green(), c3.blue(), 190))
             p.setBrush(QBrush(grad))
-            p.setPen(Qt.PenStyle.NoPen)
-            p.drawEllipse(QPointF(cx, cy), r, r)
+            p.setPen(QPen(QColor(17, 17, 21), 1))
+            p.drawRect(QRectF(rx, ry, size, size))
         p.end()
-
 
 
 class ElidedLabel(QWidget):
@@ -208,7 +210,6 @@ class ElidedLabel(QWidget):
         self._text = text
         self.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Preferred)
         self.setMinimumWidth(0)
-        # Allow stylesheet color/font to propagate
         self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, False)
 
     def setText(self, text):
@@ -228,7 +229,6 @@ class ElidedLabel(QWidget):
     def paintEvent(self, e):
         from PyQt6.QtGui import QPalette
         p = QPainter(self)
-        # Use the foreground color set via stylesheet
         color = self.palette().color(QPalette.ColorRole.WindowText)
         p.setPen(color)
         fm = p.fontMetrics()
@@ -241,11 +241,11 @@ class OutlinedLabel(QLabel):
     """A QLabel that renders text with a custom fill color and outline stroke color."""
     def __init__(self, text="", parent=None):
         super().__init__(text, parent)
-        self._fill_color = QColor(255, 255, 255) # Default white
-        self._stroke_color = QColor(40, 27, 21)   # Default dark brown (#281B15)
-        self._stroke_width = 4.0
+        self._fill_color = QColor(240, 240, 245)
+        self._stroke_color = QColor(17, 17, 21)
+        self._stroke_width = 3.0
 
-    def setColors(self, fill, stroke, stroke_width=4.0):
+    def setColors(self, fill, stroke, stroke_width=3.0):
         self._fill_color = QColor(fill)
         self._stroke_color = QColor(stroke)
         self._stroke_width = stroke_width
@@ -253,7 +253,7 @@ class OutlinedLabel(QLabel):
 
     def paintEvent(self, event):
         painter = QPainter(self)
-        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing, False)
         
         rect = self.rect()
         path = QPainterPath()
@@ -264,7 +264,6 @@ class OutlinedLabel(QLabel):
         text_w = fm.horizontalAdvance(text)
         text_h = fm.height()
         
-        # Calculate horizontal and vertical positioning based on alignment
         x = float(rect.left())
         align = self.alignment()
         if align & Qt.AlignmentFlag.AlignHCenter:
@@ -276,14 +275,103 @@ class OutlinedLabel(QLabel):
         
         path.addText(x, y, font, text)
         
-        # Draw stroke
         pen = QPen(self._stroke_color, self._stroke_width)
-        pen.setJoinStyle(Qt.PenJoinStyle.RoundJoin)
+        pen.setJoinStyle(Qt.PenJoinStyle.MiterJoin)
         painter.setPen(pen)
         painter.drawPath(path)
         
-        # Draw fill
         painter.fillPath(path, QBrush(self._fill_color))
         painter.end()
+
+
+class PixelLogoWidget(QWidget):
+    """Pixel art logo displaying the word PITCH rendered entirely in pixel matrix art."""
+
+    FONT_MATRICES = {
+        'P': [
+            [1, 1, 1, 1, 0],
+            [1, 0, 0, 0, 1],
+            [1, 0, 0, 0, 1],
+            [1, 1, 1, 1, 0],
+            [1, 0, 0, 0, 0],
+            [1, 0, 0, 0, 0],
+            [1, 0, 0, 0, 0],
+        ],
+        'I': [
+            [1, 1, 1, 1, 1],
+            [0, 0, 1, 0, 0],
+            [0, 0, 1, 0, 0],
+            [0, 0, 1, 0, 0],
+            [0, 0, 1, 0, 0],
+            [0, 0, 1, 0, 0],
+            [1, 1, 1, 1, 1],
+        ],
+        'T': [
+            [1, 1, 1, 1, 1],
+            [0, 0, 1, 0, 0],
+            [0, 0, 1, 0, 0],
+            [0, 0, 1, 0, 0],
+            [0, 0, 1, 0, 0],
+            [0, 0, 1, 0, 0],
+            [0, 0, 1, 0, 0],
+        ],
+        'C': [
+            [0, 1, 1, 1, 1],
+            [1, 0, 0, 0, 0],
+            [1, 0, 0, 0, 0],
+            [1, 0, 0, 0, 0],
+            [1, 0, 0, 0, 0],
+            [1, 0, 0, 0, 0],
+            [0, 1, 1, 1, 1],
+        ],
+        'H': [
+            [1, 0, 0, 0, 1],
+            [1, 0, 0, 0, 1],
+            [1, 0, 0, 0, 1],
+            [1, 1, 1, 1, 1],
+            [1, 0, 0, 0, 1],
+            [1, 0, 0, 0, 1],
+            [1, 0, 0, 0, 1],
+        ],
+    }
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setFixedHeight(50)
+
+    def paintEvent(self, event):
+        p = QPainter(self)
+        p.setRenderHint(QPainter.RenderHint.Antialiasing, False)
+
+        word = "PITCH"
+        pixel_size = 3.5
+        pixel_gap = 1.0
+        char_gap = 6.0
+
+        rows = 7
+        cols_per_char = 5
+        char_w = cols_per_char * (pixel_size + pixel_gap)
+        total_w = len(word) * char_w + (len(word) - 1) * char_gap
+        total_h = rows * (pixel_size + pixel_gap)
+
+        start_x = (self.width() - total_w) / 2
+        start_y = (self.height() - total_h) / 2
+
+        p.setPen(Qt.PenStyle.NoPen)
+        p.setBrush(QBrush(QColor(240, 240, 245)))
+
+        curr_x = start_x
+        for char in word:
+            matrix = self.FONT_MATRICES.get(char)
+            if matrix:
+                for r, row in enumerate(matrix):
+                    for c, val in enumerate(row):
+                        if val == 1:
+                            px = curr_x + c * (pixel_size + pixel_gap)
+                            py = start_y + r * (pixel_size + pixel_gap)
+                            p.drawRect(QRectF(px, py, pixel_size, pixel_size))
+            curr_x += char_w + char_gap
+
+        p.end()
 
 

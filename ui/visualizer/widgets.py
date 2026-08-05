@@ -8,6 +8,55 @@ from ..styles import _lerp_color
 from ..styles_data import VISUALIZER_PRESETS, VISUALIZER_SIZES
 
 
+def _draw_pixel_pill(painter, ox, oy, ow, oh, fill_color, stroke_color):
+    """Draw a pixelated stepped oval/pill container with a 2px pixel stroke."""
+    r = oh / 2.0
+    path = QPainterPath()
+    
+    h1 = 3.0
+    h2 = 6.0
+    
+    x_in1 = r * 0.45
+    x_in2 = r * 0.18
+    
+    # Top edge
+    path.moveTo(ox + x_in1, oy)
+    path.lineTo(ox + ow - x_in1, oy)
+    
+    # Right cap steps
+    path.lineTo(ox + ow - x_in1, oy + h1)
+    path.lineTo(ox + ow - x_in2, oy + h1)
+    path.lineTo(ox + ow - x_in2, oy + h2)
+    path.lineTo(ox + ow, oy + h2)
+    path.lineTo(ox + ow, oy + oh - h2)
+    path.lineTo(ox + ow - x_in2, oy + oh - h2)
+    path.lineTo(ox + ow - x_in2, oy + oh - h1)
+    path.lineTo(ox + ow - x_in1, oy + oh - h1)
+    path.lineTo(ox + ow - x_in1, oy + oh)
+    
+    # Bottom edge
+    path.lineTo(ox + x_in1, oy + oh)
+    
+    # Left cap steps
+    path.lineTo(ox + x_in1, oy + oh - h1)
+    path.lineTo(ox + x_in2, oy + oh - h1)
+    path.lineTo(ox + x_in2, oy + oh - h2)
+    path.lineTo(ox, oy + oh - h2)
+    path.lineTo(ox, oy + h2)
+    path.lineTo(ox + x_in2, oy + h2)
+    path.lineTo(ox + x_in2, oy + h1)
+    path.lineTo(ox + x_in1, oy + h1)
+    path.lineTo(ox + x_in1, oy)
+    
+    path.closeSubpath()
+    
+    painter.fillPath(path, QBrush(fill_color))
+    pen = QPen(stroke_color, 2)
+    pen.setJoinStyle(Qt.PenJoinStyle.MiterJoin)
+    painter.setPen(pen)
+    painter.drawPath(path)
+
+
 class PreviewWidget(QWidget):
     """Preview widget for visualizer settings"""
     def __init__(self, parent=None):
@@ -23,7 +72,7 @@ class PreviewWidget(QWidget):
         self._demo_target = 0.6
         self._time_counter = 0.0
         self._scroll_offset = 0.0
-        self._bg_mode = "solid"  # "solid", "none"
+        self._bg_mode = "solid"
         self._timer = QTimer(self)
         self._timer.timeout.connect(self._tick)
         self._timer.start(33)
@@ -51,26 +100,22 @@ class PreviewWidget(QWidget):
 
     def paintEvent(self, event):
         p = QPainter(self)
-        p.setRenderHint(QPainter.RenderHint.Antialiasing)
+        p.setRenderHint(QPainter.RenderHint.Antialiasing, False)
         ow, oh = VISUALIZER_SIZES.get(self._size_key, (80, 26))
         ox = (self.width() - ow) / 2
         oy = (self.height() - oh) / 2
         
-        # Draw background based on mode
+        # Draw background based on mode (pixelated stepped oval container)
         if self._bg_mode == "solid":
             preset = VISUALIZER_PRESETS.get(self._preset_key, VISUALIZER_PRESETS["mono"])
-            bg = preset.get("bg_color", {}).get(self._theme, QColor(9, 9, 11, 245))
-            brd = QColor(min(255, bg.red() + 25), min(255, bg.green() + 25), min(255, bg.blue() + 25), 255)
-            p.setBrush(QBrush(bg))
-            p.setPen(QPen(brd, 1))
-            p.drawRoundedRect(QRectF(ox, oy, ow, oh), oh / 2, oh / 2)
-        # For "none" mode, skip background drawing entirely
+            bg = preset.get("bg_color", {}).get(self._theme, QColor(17, 17, 21, 245))
+            brd = QColor(56, 56, 77)
+            _draw_pixel_pill(p, ox, oy, ow, oh, bg, brd)
         
         preset = VISUALIZER_PRESETS.get(self._preset_key, VISUALIZER_PRESETS["mono"])
         vol = self._demo_volume * self._sensitivity
-        if self._style == "wave":    self._draw_wave(p, ox, oy, ow, oh, preset, vol)
-        elif self._style == "bars":  self._draw_bars(p, ox, oy, ow, oh, preset, vol)
-        elif self._style == "scroll": self._draw_scroll(p, ox, oy, ow, oh, preset, vol)
+        if self._style == "matrix":    self._draw_matrix(p, ox, oy, ow, oh, preset, vol)
+        else:                          self._draw_wave(p, ox, oy, ow, oh, preset, vol)
         p.end()
 
     def _draw_wave(self, p, ox, oy, ow, oh, preset, volume):
@@ -89,57 +134,59 @@ class PreviewWidget(QWidget):
             pen = QPen(color); pen.setWidthF(pen_w); pen.setCapStyle(Qt.PenCapStyle.RoundCap)
             p.setPen(pen); p.drawPath(path)
 
-    def _draw_bars(self, p, ox, oy, ow, oh, preset, volume):
-        nb = max(5, int(ow / 8)); bw = max(2.5, (ow - 12) / (nb * 1.6))
-        gap = (ow - 12 - bw * nb) / max(1, nb - 1); max_h = oh * 0.7; cy = oy + oh / 2
-        colors = [w[self._theme] for w in preset["waves"]]
-        for i in range(nb):
-            t = i / max(1, nb - 1)
-            bvol = volume * (0.4 + 0.6 * math.sin(self._phase * 1.5 + i * 0.8) ** 2)
-            bh = max(2, max_h * bvol); bx = ox + 6 + i * (bw + gap); by = cy - bh / 2
-            color = _lerp_color(colors[0], colors[1], t * 2) if t < 0.5 else _lerp_color(colors[1], colors[2], (t - 0.5) * 2)
-            p.setPen(Qt.PenStyle.NoPen); p.setBrush(QBrush(color))
-            p.drawRoundedRect(QRectF(bx, by, bw, bh), bw / 2, bw / 2)
+    def _draw_matrix(self, p, ox, oy, ow, oh, preset, volume):
+        """Discrete Diamond Pixel Field (7-row layout with top r=0 and bottom r=6 1-px tips trimmed)"""
+        cols, rows = 19, 7
+        cell_size = max(2.5, min(4.0, (oh - 10) / rows - 1.2))
+        gap = 1.5
+        
+        grid_w = cols * cell_size + (cols - 1) * gap
+        grid_h = rows * cell_size + (rows - 1) * gap
+        
+        start_x = ox + (ow - grid_w) / 2.0
+        start_y = oy + (oh - grid_h) / 2.0
 
-    def _draw_scroll(self, p, ox, oy, ow, oh, preset, volume):
-        """Scrolling bars that move continuously to the left - equalizer style"""
-        bar_width = 2.5
-        bar_spacing = 4.0
-        total_spacing = bar_width + bar_spacing
-        max_h = oh * 0.85
-        cy = oy + oh / 2
-        
+        mid_c = (cols - 1) / 2.0
+        mid_r = (rows - 1) / 2.0
+
         colors = [w[self._theme] for w in preset["waves"]]
-        
-        # Calculate how many bars fit in the visible area
-        visible_width = ow - 12
-        num_bars = int(visible_width / total_spacing) + 2
-        
-        # Draw bars scrolling from right to left
-        for i in range(num_bars):
-            # Position with scroll offset
-            x_pos = ox + 6 + (i * total_spacing) - (self._scroll_offset % total_spacing)
-            
-            # Skip if outside visible area
-            if x_pos < ox or x_pos > ox + ow - 6:
+        primary_color = colors[0]
+        bg_dim = QColor(primary_color.red(), primary_color.green(), primary_color.blue(), 20)
+
+        p.setPen(Qt.PenStyle.NoPen)
+
+        for r in range(rows):
+            if r == 0 or r == 6:
                 continue
-            
-            # Height based on volume and position
-            t = i / max(1, num_bars - 1)
-            # Create wave pattern that moves
-            wave_factor = 0.5 + 0.5 * math.sin(self._phase * 2.0 + i * 0.6)
-            bvol = volume * (0.3 + 0.7 * wave_factor)
-            bh = max(3, max_h * bvol)
-            
-            # Center-aligned (equalizer style) - grows both up and down
-            by = cy - bh / 2
-            
-            # Color gradient
-            color = _lerp_color(colors[0], colors[1], t * 2) if t < 0.5 else _lerp_color(colors[1], colors[2], (t - 0.5) * 2)
-            
-            p.setPen(Qt.PenStyle.NoPen)
-            p.setBrush(QBrush(color))
-            p.drawRoundedRect(QRectF(x_pos, by, bar_width, bh), bar_width / 2, bar_width / 2)
+
+            for c in range(cols):
+                norm_x = abs(c - mid_c) / max(1, mid_c)
+                norm_y = abs(r - mid_r) / max(1, mid_r)
+                diamond_val = norm_x + norm_y
+
+                if diamond_val > 1.15:
+                    continue
+
+                px_hash = ((c * 13 + r * 29) % 11) / 35.0
+                center_dist = diamond_val * 0.5 + min(norm_x, norm_y) * 0.5 + px_hash
+                
+                pulse = 0.05 * math.sin(self._phase * 1.4 - center_dist * 2.0)
+                threshold = center_dist * 0.60
+                side_damp = 1.0 - 0.3 * norm_x
+
+                bx = start_x + c * (cell_size + gap)
+                by = start_y + r * (cell_size + gap)
+
+                if volume > threshold:
+                    intensity = (volume - threshold) / (1.0 - threshold + 0.01) + pulse
+                    intensity = min(1.0, max(0.2, intensity * side_damp))
+                    c_col = _lerp_color(bg_dim, primary_color, intensity)
+                    p.setBrush(QBrush(c_col))
+                else:
+                    faint_col = QColor(primary_color.red(), primary_color.green(), primary_color.blue(), int(25 * side_damp))
+                    p.setBrush(QBrush(faint_col))
+
+                p.drawRect(QRectF(bx, by, cell_size, cell_size))
 
 
 class OverlayWindow(QWidget):
@@ -150,7 +197,7 @@ class OverlayWindow(QWidget):
         self.vis_style = "wave"
         self.color_preset = "mono"
         self.size_key = "medium"
-        self.bg_mode = "solid"  # "solid", "none"
+        self.bg_mode = "solid"
 
         self.setWindowFlags(
             Qt.WindowType.WindowStaysOnTopHint |
@@ -211,7 +258,7 @@ class OverlayWindow(QWidget):
 
     def update_animation(self):
         if self.state == "processing":
-            self.spinner_angle = (self.spinner_angle + 45) % 360
+            self.spinner_angle = (self.spinner_angle + 12) % 360
             self.update()
         elif self.state == "recording":
             self.volume += (self.target_volume - self.volume) * 0.25
@@ -236,31 +283,25 @@ class OverlayWindow(QWidget):
 
     def paintEvent(self, event):
         painter = QPainter(self)
-        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing, False)
         w, h = self.width(), self.height()
         
         preset = VISUALIZER_PRESETS.get(self.color_preset, VISUALIZER_PRESETS["mono"])
 
-        bg_color = preset.get("bg_color", {}).get(self.theme, QColor(34, 34, 34, 172))
-        glow_color = QColor(255, 255, 255, 24)
+        bg_color = preset.get("bg_color", {}).get(self.theme, QColor(17, 17, 21, 230))
+        glow_color = QColor(56, 56, 77)
 
-        # Draw background based on mode
+        # Draw background based on mode (pixelated stepped oval container)
         if self.bg_mode == "solid":
-            painter.setBrush(QBrush(bg_color))
-            painter.setPen(Qt.PenStyle.NoPen)
-            painter.drawRoundedRect(QRectF(0, 0, w, h), h / 2, h / 2)
-            painter.setBrush(Qt.BrushStyle.NoBrush)
-            painter.setPen(QPen(glow_color, 1))
-            painter.drawRoundedRect(QRectF(1.5, 1.5, w - 3, h - 3), (h - 3) / 2, (h - 3) / 2)
-        # For "none" mode, skip background drawing entirely
+            _draw_pixel_pill(painter, 0, 0, w, h, bg_color, glow_color)
 
         if self.state == "recording":
             vol = min(1.0, self.volume * self.sensitivity)
-            if self.vis_style == "wave":    self._paint_wave(painter, w, h, preset, vol)
-            elif self.vis_style == "bars":  self._paint_bars(painter, w, h, preset, vol)
-            elif self.vis_style == "scroll": self._paint_scroll(painter, w, h, preset, vol)
+            if self.vis_style == "matrix":    self._paint_matrix(painter, w, h, preset, vol)
+            else:                             self._paint_wave(painter, w, h, preset, vol)
         elif self.state == "processing":
-            self._paint_spinner(painter, w, h, preset)
+            if self.vis_style == "matrix":    self._paint_matrix_processing(painter, w, h, preset)
+            else:                             self._paint_wave_processing(painter, w, h, preset)
         painter.end()
 
     def _paint_wave(self, painter, w, h, preset, vol):
@@ -279,68 +320,131 @@ class OverlayWindow(QWidget):
             pen = QPen(color); pen.setWidthF(pen_w); pen.setCapStyle(Qt.PenCapStyle.RoundCap)
             painter.setPen(pen); painter.drawPath(path)
 
-    def _paint_bars(self, painter, w, h, preset, vol):
-        nb = max(5, int(w / 8)); bw = max(2.5, (w - 12) / (nb * 1.6))
-        gap = (w - 12 - bw * nb) / max(1, nb - 1); max_h = h * 0.7; cy = h / 2
+    def _paint_wave_processing(self, painter, w, h, preset):
+        """Calm, smooth flowing wave processing animation for Wave visualizer style"""
+        cy = h / 2.0
         colors = [wc[self.theme] for wc in preset["waves"]]
-        for i in range(nb):
-            t = i / max(1, nb - 1)
-            bvol = vol * (0.4 + 0.6 * math.sin(self.phase * 1.5 + i * 0.8) ** 2)
-            bh = max(2, max_h * bvol); bx = 6 + i * (bw + gap); by = cy - bh / 2
-            color = _lerp_color(colors[0], colors[1], t * 2) if t < 0.5 else _lerp_color(colors[1], colors[2], (t - 0.5) * 2)
-            painter.setPen(Qt.PenStyle.NoPen); painter.setBrush(QBrush(color))
-            painter.drawRoundedRect(QRectF(bx, by, bw, bh), bw / 2, bw / 2)
+        primary = colors[0]
+        
+        path = QPainterPath()
+        first = True
+        head_phase = (self.spinner_angle / 360.0) * math.pi * 2.0
+        
+        for x in range(6, w - 6):
+            t = (x - 6) / max(1, w - 12)
+            env = math.pow(math.sin(math.pi * t), 2.0)
+            y = cy + (h * 0.22) * env * math.sin(x * 0.12 + head_phase)
+            if first: path.moveTo(x, y); first = False
+            else: path.lineTo(x, y)
 
-    def _paint_scroll(self, painter, w, h, preset, vol):
-        """Scrolling bars that move continuously to the left - equalizer style"""
-        bar_width = 2.5
-        bar_spacing = 4.0
-        total_spacing = bar_width + bar_spacing
-        max_h = h * 0.85
-        cy = h / 2
-        
+        pen = QPen(QColor(primary.red(), primary.green(), primary.blue(), 200))
+        pen.setWidthF(1.8)
+        pen.setCapStyle(Qt.PenCapStyle.RoundCap)
+        painter.setPen(pen)
+        painter.drawPath(path)
+
+    def _paint_matrix(self, painter, w, h, preset, vol):
+        """Discrete Diamond Pixel Field (7-row layout with top r=0 and bottom r=6 1-px tips trimmed)"""
+        cols, rows = 19, 7
+        cell_size = max(2.5, min(4.0, (h - 10) / rows - 1.2))
+        gap = 1.5
+
+        grid_w = cols * cell_size + (cols - 1) * gap
+        grid_h = rows * cell_size + (rows - 1) * gap
+
+        start_x = (w - grid_w) / 2.0
+        start_y = (h - grid_h) / 2.0
+
+        mid_c = (cols - 1) / 2.0
+        mid_r = (rows - 1) / 2.0
+
         colors = [wc[self.theme] for wc in preset["waves"]]
-        
-        # Calculate how many bars fit in the visible area
-        visible_width = w - 12
-        num_bars = int(visible_width / total_spacing) + 2
-        
-        # Draw bars scrolling from right to left
-        for i in range(num_bars):
-            # Position with scroll offset
-            x_pos = 6 + (i * total_spacing) - (self.scroll_offset % total_spacing)
-            
-            # Skip if outside visible area
-            if x_pos < 0 or x_pos > w - 6:
+        primary_color = colors[0]
+        bg_dim = QColor(primary_color.red(), primary_color.green(), primary_color.blue(), 20)
+
+        painter.setPen(Qt.PenStyle.NoPen)
+
+        for r in range(rows):
+            if r == 0 or r == 6:
                 continue
-            
-            # Height based on volume and position
-            t = i / max(1, num_bars - 1)
-            # Create wave pattern that moves
-            wave_factor = 0.5 + 0.5 * math.sin(self.phase * 2.0 + i * 0.6)
-            bvol = vol * (0.3 + 0.7 * wave_factor)
-            bh = max(3, max_h * bvol)
-            
-            # Center-aligned (equalizer style) - grows both up and down
-            by = cy - bh / 2
-            
-            # Color gradient
-            color = _lerp_color(colors[0], colors[1], t * 2) if t < 0.5 else _lerp_color(colors[1], colors[2], (t - 0.5) * 2)
-            
-            painter.setPen(Qt.PenStyle.NoPen)
-            painter.setBrush(QBrush(color))
-            painter.drawRoundedRect(QRectF(x_pos, by, bar_width, bh), bar_width / 2, bar_width / 2)
 
-    def _paint_spinner(self, painter, w, h, preset):
-        cx, cy = w / 2, h / 2
-        base_color = preset["waves"][0][self.theme]
-        painter.translate(cx, cy)
-        painter.rotate(self.spinner_angle)
-        segments = 8
-        for i in range(segments):
-            opacity = int(255 - (255 / segments) * i)
-            pen = QPen(QColor(base_color.red(), base_color.green(), base_color.blue(), opacity))
-            pen.setWidth(2); pen.setCapStyle(Qt.PenCapStyle.RoundCap)
-            painter.setPen(pen); painter.drawLine(0, 3, 0, 6)
-            painter.rotate(-360 / segments)
-        painter.resetTransform()
+            for c in range(cols):
+                norm_x = abs(c - mid_c) / max(1, mid_c)
+                norm_y = abs(r - mid_r) / max(1, mid_r)
+                diamond_val = norm_x + norm_y
+
+                if diamond_val > 1.15:
+                    continue
+
+                px_hash = ((c * 13 + r * 29) % 11) / 35.0
+                center_dist = diamond_val * 0.5 + min(norm_x, norm_y) * 0.5 + px_hash
+
+                pulse = 0.05 * math.sin(self.phase * 1.4 - center_dist * 2.0)
+                threshold = center_dist * 0.60
+                side_damp = 1.0 - 0.3 * norm_x
+
+                bx = start_x + c * (cell_size + gap)
+                by = start_y + r * (cell_size + gap)
+
+                if vol > threshold:
+                    intensity = (vol - threshold) / (1.0 - threshold + 0.01) + pulse
+                    intensity = min(1.0, max(0.2, intensity * side_damp))
+                    c_col = _lerp_color(bg_dim, primary_color, intensity)
+                    painter.setBrush(QBrush(c_col))
+                else:
+                    faint_col = QColor(primary_color.red(), primary_color.green(), primary_color.blue(), int(25 * side_damp))
+                    painter.setBrush(QBrush(faint_col))
+
+                painter.drawRect(QRectF(bx, by, cell_size, cell_size))
+
+    def _paint_matrix_processing(self, painter, w, h, preset):
+        """Matrix Processing Animation: Rotating Pixel Snake travelling cleanly on exact Matrix cells (no background grid)"""
+        cols, rows = 19, 7
+        cell_size = max(2.5, min(4.0, (h - 10) / rows - 1.2))
+        gap = 1.5
+
+        grid_w = cols * cell_size + (cols - 1) * gap
+        grid_h = rows * cell_size + (rows - 1) * gap
+
+        start_x = (w - grid_w) / 2.0
+        start_y = (h - grid_h) / 2.0
+
+        mid_c = (cols - 1) / 2.0
+        mid_r = (rows - 1) / 2.0
+
+        colors = [wc[self.theme] for wc in preset["waves"]]
+        primary_color = colors[0]
+
+        head_angle = (self.spinner_angle / 360.0) * math.pi * 2.0
+
+        painter.setPen(Qt.PenStyle.NoPen)
+
+        for r in range(rows):
+            if r == 0 or r == 6:
+                continue
+
+            for c in range(cols):
+                norm_x = abs(c - mid_c) / max(1, mid_c)
+                norm_y = abs(r - mid_r) / max(1, mid_r)
+                diamond_val = norm_x + norm_y
+
+                if diamond_val > 1.15:
+                    continue
+
+                cell_angle = math.atan2((r - mid_r), (c - mid_c) * 0.45)
+                angle_diff = (head_angle - cell_angle) % (math.pi * 2.0)
+                
+                # Snake tail intensity (only active snake pixels light up)
+                snake_glow = math.exp(-angle_diff * 2.2)
+                if snake_glow < 0.15:
+                    continue
+
+                bx = start_x + c * (cell_size + gap)
+                by = start_y + r * (cell_size + gap)
+
+                opacity = int(255 * min(1.0, snake_glow))
+                c_col = QColor(primary_color.red(), primary_color.green(), primary_color.blue(), opacity)
+                painter.setBrush(QBrush(c_col))
+                painter.drawRect(QRectF(bx, by, cell_size, cell_size))
+
+

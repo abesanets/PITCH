@@ -22,7 +22,7 @@ from .tabs.history     import (
 from .tabs.settings    import (
     build_settings_tab, auto_save_settings,
 )
-from ..widgets import ToggleSwitch, OutlinedLabel
+from ..widgets import ToggleSwitch, OutlinedLabel, PixelLogoWidget
 
 
 class TitleBar(QFrame):
@@ -158,19 +158,9 @@ class DashboardWindow(QWidget):
         lay.setSpacing(2)
         self.sidebar_layout = lay
 
-        logo_lbl = OutlinedLabel("Pitch")
-        logo_lbl.setObjectName("AppName")
-        logo_lbl.setColors("#FFFFFF", "#281B15", 4.5)
-        
-        # Explicitly set font to Segoe Script Bold to match the tray icon and branding
-        logo_font = QFont("Segoe Script")
-        logo_font.setBold(True)
-        logo_font.setPointSize(34)
-        logo_lbl.setFont(logo_font)
-        
-        logo_lbl.setAlignment(Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignVCenter)
-        logo_lbl.setContentsMargins(0, 0, 0, 10)
-        lay.addWidget(logo_lbl)
+        logo_widget = PixelLogoWidget()
+        logo_widget.setObjectName("AppName")
+        lay.addWidget(logo_widget)
         lay.addSpacing(8)
 
         self.nav_buttons = []
@@ -232,7 +222,9 @@ class DashboardWindow(QWidget):
         auto_save_settings(self)
 
     def _on_shape_changed(self, idx):
-        self.preview_widget.set_style(["wave", "bars", "scroll"][idx])
+        styles = ["wave", "matrix"]
+        style_key = styles[idx] if idx < len(styles) else "wave"
+        self.preview_widget.set_style(style_key)
         self._auto_save_visualizer()
 
     def _on_bg_mode_changed(self, idx):
@@ -254,13 +246,16 @@ class DashboardWindow(QWidget):
         self._auto_save_visualizer()
 
     def _auto_save_visualizer(self):
-        self.config["visualizer_style"] = ["wave", "bars", "scroll"][self.shape_seg.currentIndex()]
+        styles = ["wave", "matrix"]
+        idx = self.shape_seg.currentIndex()
+        self.config["visualizer_style"] = styles[idx] if idx < len(styles) else "wave"
         self.config["visualizer_size"]  = ["xs", "small", "medium", "large", "xl"][self.size_seg.currentIndex()]
         self.config["visualizer_color_preset"] = self.color_selector.currentPreset()
         self.config["visualizer_bg_mode"] = ["solid", "none"][self.bg_seg.currentIndex()]
         self.config["theme"] = "dark"
         self.config["visualizer_sensitivity"] = self.sens_values[self.sens_seg.currentIndex()]
         self.save_callback(self.config)
+
 
     # --- Theme and state ---
 
@@ -480,10 +475,11 @@ class DashboardWindow(QWidget):
 
     def paintEvent(self, event):
         painter = QPainter(self)
-        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing, False)
         rect = QRectF(self.rect())
-        rect.adjust(0.5, 0.5, -0.5, -0.5)
-        painter.setBrush(QBrush(QColor("#DFCEBA")))
-        painter.setPen(QPen(QColor("#7D6454"), 1.0))
-        painter.drawRoundedRect(rect, 20.0, 20.0)
+        rect.adjust(1.0, 1.0, -1.0, -1.0)
+        painter.setBrush(QBrush(QColor("#111115")))
+        painter.setPen(QPen(QColor("#38384d"), 2.0))
+        painter.drawRect(rect)
         painter.end()
+

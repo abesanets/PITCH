@@ -5,109 +5,109 @@ from PyQt6.QtGui import QColor
 VISUALIZER_PRESETS = {
     "mono": {
         "name": "Mono",
-        "bg_color": {"dark": QColor(9, 9, 11, 245), "light": QColor(24, 24, 27, 245)},
+        "bg_color": {"dark": QColor(17, 17, 21, 245), "light": QColor(17, 17, 21, 245)},
         "waves": [
-            {"dark": QColor(244, 244, 245, 255), "light": QColor(24, 24, 27, 255),
+            {"dark": QColor(240, 240, 245, 255), "light": QColor(240, 240, 245, 255),
              "amp": 1.0, "freq": 0.12, "phase": 1.0, "width": 2.0},
-            {"dark": QColor(161, 161, 170, 160), "light": QColor(113, 113, 122, 140),
+            {"dark": QColor(180, 180, 195, 180), "light": QColor(180, 180, 195, 180),
              "amp": 0.65, "freq": 0.22, "phase": -1.3, "width": 1.5},
-            {"dark": QColor(113, 113, 122, 100), "light": QColor(161, 161, 170, 100),
+            {"dark": QColor(115, 115, 135, 120), "light": QColor(115, 115, 135, 120),
              "amp": 0.35, "freq": 0.08, "phase": 0.7, "width": 1.0},
         ]
     },
-    "chocolate": {
-        "name": "Chocolate",
-        "bg_color": {"dark": QColor(36, 26, 20, 160), "light": QColor(245, 236, 227, 200)},
+    "matrix": {
+        "name": "Matrix",
+        "bg_color": {"dark": QColor(10, 24, 16, 245), "light": QColor(10, 24, 16, 245)},
         "waves": [
-            {"dark": QColor(245, 236, 227, 255), "light": QColor(78, 56, 43, 255),
+            {"dark": QColor(0, 230, 118, 255), "light": QColor(0, 230, 118, 255),
              "amp": 1.0, "freq": 0.12, "phase": 1.0, "width": 2.0},
-            {"dark": QColor(223, 206, 186, 220), "light": QColor(90, 66, 52, 180),
+            {"dark": QColor(0, 200, 83, 180), "light": QColor(0, 200, 83, 180),
              "amp": 0.65, "freq": 0.22, "phase": -1.3, "width": 1.5},
-            {"dark": QColor(109, 81, 65, 140), "light": QColor(212, 197, 185, 120),
+            {"dark": QColor(0, 137, 123, 120), "light": QColor(0, 137, 123, 120),
              "amp": 0.35, "freq": 0.08, "phase": 0.7, "width": 1.0},
         ]
     },
-    "ocean": {
-        "name": "Ocean",
-        "bg_color": {"dark": QColor(6, 25, 38, 160), "light": QColor(224, 242, 254, 200)},
+    "cyber": {
+        "name": "Cyber",
+        "bg_color": {"dark": QColor(8, 20, 36, 245), "light": QColor(8, 20, 36, 245)},
         "waves": [
-            {"dark": QColor(56, 189, 248, 255), "light": QColor(2, 132, 199, 255),
+            {"dark": QColor(0, 229, 255, 255), "light": QColor(0, 229, 255, 255),
              "amp": 1.0, "freq": 0.12, "phase": 1.0, "width": 2.0},
-            {"dark": QColor(6, 182, 212, 180), "light": QColor(14, 116, 144, 160),
+            {"dark": QColor(0, 176, 255, 180), "light": QColor(0, 176, 255, 180),
              "amp": 0.65, "freq": 0.22, "phase": -1.3, "width": 1.5},
-            {"dark": QColor(34, 211, 238, 120), "light": QColor(8, 145, 178, 110),
+            {"dark": QColor(41, 121, 255, 120), "light": QColor(41, 121, 255, 120),
              "amp": 0.35, "freq": 0.08, "phase": 0.7, "width": 1.0},
         ]
     },
-    "aurora": {
-        "name": "Aurora",
-        "bg_color": {"dark": QColor(5, 30, 24, 160), "light": QColor(209, 250, 229, 200)},
+    "amber": {
+        "name": "Amber",
+        "bg_color": {"dark": QColor(28, 18, 8, 245), "light": QColor(28, 18, 8, 245)},
         "waves": [
-            {"dark": QColor(16, 185, 129, 255), "light": QColor(5, 150, 105, 255),
+            {"dark": QColor(255, 179, 0, 255), "light": QColor(255, 179, 0, 255),
              "amp": 1.0, "freq": 0.12, "phase": 1.0, "width": 2.0},
-            {"dark": QColor(6, 182, 212, 180), "light": QColor(8, 145, 178, 160),
+            {"dark": QColor(255, 143, 0, 180), "light": QColor(255, 143, 0, 180),
              "amp": 0.65, "freq": 0.22, "phase": -1.3, "width": 1.5},
-            {"dark": QColor(132, 204, 22, 120), "light": QColor(101, 163, 13, 110),
+            {"dark": QColor(255, 111, 0, 120), "light": QColor(255, 111, 0, 120),
              "amp": 0.35, "freq": 0.08, "phase": 0.7, "width": 1.0},
         ]
     },
-    "neon": {
-        "name": "Neon",
-        "bg_color": {"dark": QColor(35, 10, 50, 160), "light": QColor(251, 207, 232, 200)},
+    "synth": {
+        "name": "Synth",
+        "bg_color": {"dark": QColor(26, 10, 36, 245), "light": QColor(26, 10, 36, 245)},
         "waves": [
-            {"dark": QColor(236, 72, 153, 255), "light": QColor(190, 24, 93, 255),
+            {"dark": QColor(224, 64, 251, 255), "light": QColor(224, 64, 251, 255),
              "amp": 1.0, "freq": 0.12, "phase": 1.0, "width": 2.0},
-            {"dark": QColor(168, 85, 247, 180), "light": QColor(126, 34, 206, 160),
+            {"dark": QColor(124, 77, 255, 180), "light": QColor(124, 77, 255, 180),
              "amp": 0.65, "freq": 0.22, "phase": -1.3, "width": 1.5},
-            {"dark": QColor(6, 182, 212, 120), "light": QColor(8, 145, 178, 110),
+            {"dark": QColor(101, 31, 255, 120), "light": QColor(101, 31, 255, 120),
              "amp": 0.35, "freq": 0.08, "phase": 0.7, "width": 1.0},
         ]
     },
-    "sunset": {
-        "name": "Sunset",
-        "bg_color": {"dark": QColor(40, 12, 10, 160), "light": QColor(254, 243, 199, 200)},
+    "plasma": {
+        "name": "Plasma",
+        "bg_color": {"dark": QColor(32, 10, 16, 245), "light": QColor(32, 10, 16, 245)},
         "waves": [
-            {"dark": QColor(251, 191, 36, 255), "light": QColor(217, 119, 6, 255),
+            {"dark": QColor(255, 23, 68, 255), "light": QColor(255, 23, 68, 255),
              "amp": 1.0, "freq": 0.12, "phase": 1.0, "width": 2.0},
-            {"dark": QColor(249, 115, 22, 180), "light": QColor(234, 88, 12, 160),
+            {"dark": QColor(245, 0, 87, 180), "light": QColor(245, 0, 87, 180),
              "amp": 0.65, "freq": 0.22, "phase": -1.3, "width": 1.5},
-            {"dark": QColor(248, 113, 113, 120), "light": QColor(220, 38, 38, 110),
+            {"dark": QColor(213, 0, 0, 120), "light": QColor(213, 0, 0, 120),
              "amp": 0.35, "freq": 0.08, "phase": 0.7, "width": 1.0},
         ]
     },
-    "lavender": {
-        "name": "Lavender",
-        "bg_color": {"dark": QColor(25, 10, 50, 160), "light": QColor(243, 232, 255, 200)},
+    "acid": {
+        "name": "Acid",
+        "bg_color": {"dark": QColor(18, 28, 8, 245), "light": QColor(18, 28, 8, 245)},
         "waves": [
-            {"dark": QColor(167, 139, 250, 255), "light": QColor(139, 92, 246, 255),
+            {"dark": QColor(198, 255, 0, 255), "light": QColor(198, 255, 0, 255),
              "amp": 1.0, "freq": 0.12, "phase": 1.0, "width": 2.0},
-            {"dark": QColor(192, 132, 252, 180), "light": QColor(167, 139, 250, 160),
+            {"dark": QColor(118, 255, 3, 180), "light": QColor(118, 255, 3, 180),
              "amp": 0.65, "freq": 0.22, "phase": -1.3, "width": 1.5},
-            {"dark": QColor(216, 180, 254, 120), "light": QColor(192, 132, 252, 110),
+            {"dark": QColor(100, 221, 23, 120), "light": QColor(100, 221, 23, 120),
              "amp": 0.35, "freq": 0.08, "phase": 0.7, "width": 1.0},
         ]
     },
-    "rose": {
-        "name": "Rose",
-        "bg_color": {"dark": QColor(45, 8, 18, 160), "light": QColor(255, 228, 230, 200)},
+    "ice": {
+        "name": "Ice",
+        "bg_color": {"dark": QColor(10, 28, 32, 245), "light": QColor(10, 28, 32, 245)},
         "waves": [
-            {"dark": QColor(244, 63, 94, 255), "light": QColor(225, 29, 72, 255),
+            {"dark": QColor(224, 247, 250, 255), "light": QColor(224, 247, 250, 255),
              "amp": 1.0, "freq": 0.12, "phase": 1.0, "width": 2.0},
-            {"dark": QColor(251, 113, 133, 180), "light": QColor(244, 63, 94, 160),
+            {"dark": QColor(128, 222, 234, 180), "light": QColor(128, 222, 234, 180),
              "amp": 0.65, "freq": 0.22, "phase": -1.3, "width": 1.5},
-             {"dark": QColor(253, 164, 175, 120), "light": QColor(251, 113, 133, 110),
-              "amp": 0.35, "freq": 0.08, "phase": 0.7, "width": 1.0},
+            {"dark": QColor(38, 198, 218, 120), "light": QColor(38, 198, 218, 120),
+             "amp": 0.35, "freq": 0.08, "phase": 0.7, "width": 1.0},
         ]
     },
-    "forest": {
-        "name": "Forest",
-        "bg_color": {"dark": QColor(10, 30, 18, 160), "light": QColor(220, 252, 231, 200)},
+    "void": {
+        "name": "Void",
+        "bg_color": {"dark": QColor(20, 14, 36, 245), "light": QColor(20, 14, 36, 245)},
         "waves": [
-            {"dark": QColor(34, 197, 94, 255), "light": QColor(22, 163, 74, 255),
+            {"dark": QColor(179, 136, 255, 255), "light": QColor(179, 136, 255, 255),
              "amp": 1.0, "freq": 0.12, "phase": 1.0, "width": 2.0},
-            {"dark": QColor(16, 185, 129, 180), "light": QColor(5, 150, 105, 160),
+            {"dark": QColor(124, 77, 255, 180), "light": QColor(124, 77, 255, 180),
              "amp": 0.65, "freq": 0.22, "phase": -1.3, "width": 1.5},
-            {"dark": QColor(132, 204, 22, 120), "light": QColor(101, 163, 13, 110),
+            {"dark": QColor(83, 109, 254, 120), "light": QColor(83, 109, 254, 120),
              "amp": 0.35, "freq": 0.08, "phase": 0.7, "width": 1.0},
         ]
     },

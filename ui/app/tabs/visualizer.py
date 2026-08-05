@@ -48,8 +48,8 @@ def build_visualizer_tab(d) -> QWidget:
     cl.setContentsMargins(16, 12, 16, 12)
     cl.setSpacing(10)
 
-    d.shape_seg = SegmentedControl(["Волна", "Бары", "Скролл"])
-    style_map = {"wave": 0, "bars": 1, "scroll": 2, "dots": 0, "ribbon": 0}
+    d.shape_seg = SegmentedControl(["Волна", "Матрица"])
+    style_map = {"wave": 0, "matrix": 1, "bars": 0, "scroll": 0}
     d.shape_seg.setCurrentIndex(style_map.get(d.config.get("visualizer_style", "wave"), 0))
     d.shape_seg.currentChanged.connect(d._on_shape_changed)
 

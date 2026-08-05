@@ -12,34 +12,31 @@ def generate_branding_assets():
     temp_img = Image.new("RGBA", (temp_size, temp_size), transparent)
     draw = ImageDraw.Draw(temp_img)
 
-    # Load cursive font
-    font_path = r"C:\Windows\Fonts\segoescb.ttf"  # Segoe Script Bold
-    if not os.path.exists(font_path):
-        font_path = r"C:\Windows\Fonts\segoesc.ttf"
+    # Draw 5x7 Pixel Art letter P
+    pixel_matrix_p = [
+        [1, 1, 1, 1, 0],
+        [1, 0, 0, 0, 1],
+        [1, 0, 0, 0, 1],
+        [1, 1, 1, 1, 0],
+        [1, 0, 0, 0, 0],
+        [1, 0, 0, 0, 0],
+        [1, 0, 0, 0, 0],
+    ]
     
-    if os.path.exists(font_path):
-        font_size = 1000
-        font = ImageFont.truetype(font_path, font_size)
-        
-        # Render P on temp canvas
-        draw.text(
-            (250, 250), 
-            "P", 
-            fill=text_color, 
-            font=font, 
-            stroke_width=32, 
-            stroke_fill=stroke_color
-        )
-    else:
-        # Fallback if cursive font is missing
-        print("Warning: Cursive font not found. Using custom curves fallback.")
-        # Drawing a geometric white "P" with dark brown stroke
-        draw.ellipse([300, 220, 720, 560], fill=stroke_color)
-        draw.ellipse([340, 260, 680, 520], fill=text_color)
-        draw.ellipse([420, 320, 600, 460], fill=stroke_color)
-        draw.ellipse([460, 360, 560, 420], fill=transparent)
-        draw.rounded_rect([300, 220, 420, 800], radius=30, fill=stroke_color)
-        draw.rounded_rect([330, 250, 390, 770], radius=15, fill=text_color)
+    px_size = 140
+    gap = 20
+    start_x = (temp_size - (5 * (px_size + gap))) // 2
+    start_y = (temp_size - (7 * (px_size + gap))) // 2
+
+    for r, row in enumerate(pixel_matrix_p):
+        for c, val in enumerate(row):
+            if val == 1:
+                x0 = start_x + c * (px_size + gap)
+                y0 = start_y + r * (px_size + gap)
+                x1 = x0 + px_size
+                y1 = y0 + px_size
+                draw.rectangle([x0, y0, x1, y1], fill=(240, 240, 245, 255))
+
 
     # Auto-crop the bounding box of non-transparent content to maximize scale
     bbox = temp_img.getbbox()

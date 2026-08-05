@@ -85,10 +85,14 @@ class VoiceAssistant:
         self.dashboard.activateWindow()
 
     def on_settings_saved(self, new_config):
+        old_startup = self.config.get("run_on_startup", False) if isinstance(self.config, dict) else False
+        new_startup = new_config.get("run_on_startup", False)
         self.config = new_config
         save_config(self.config)
         self.core.update_config(new_config)
-        update_startup_registry(self.config.get("run_on_startup", False))
+        
+        if old_startup != new_startup:
+            update_startup_registry(new_startup)
         
         self.overlay.set_theme(self.config.get("theme", "dark"))
         self.overlay.apply_config(self.config)
@@ -97,6 +101,7 @@ class VoiceAssistant:
         icon_path = get_resource_path(os.path.join("assets", "p.png"))
         if os.path.exists(icon_path):
             self.tray.setIcon(QIcon(icon_path))
+
 
 
 

@@ -2,11 +2,11 @@
     "stt_model": "gigaam-v3-e2e-rnnt",
     "hotkey_1": "ctrl+windows",
     "theme": "dark",
-    "run_on_startup": false,
-    "visualizer_style": "wave",
-    "visualizer_color_preset": "chocolate",
+    "run_on_startup": true,
+    "visualizer_style": "matrix",
+    "visualizer_color_preset": "ice",
     "visualizer_size": "medium",
     "visualizer_sensitivity": 1.2,
-    "visualizer_bg_mode": "solid",
+    "visualizer_bg_mode": "none",
     "min_recording_duration": 0.5
 }
