@@ -23,6 +23,17 @@ Launch the application entry point:
 python main.py
 ```
 
+## Building Executable and Installer
+
+Run the automated build script:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File build.ps1
+```
+
+- PyInstaller compiles the application into `dist/PITCH/` (onedir mode for instantaneous startup).
+- If [Inno Setup 6](https://jrsoftware.org/isdl.php) is installed, `installer.iss` automatically builds `dist/PITCH_Setup_v1.12.exe`.
+
 ## Hotkeys and Controls
 
 - **Ctrl + Win** (Press and Hold): Start recording audio. Releasing keys transcribes audio in RAM and pastes text into active window.

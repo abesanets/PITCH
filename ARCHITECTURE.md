@@ -9,6 +9,9 @@ This document outlines the codebase structure and responsibilities of key compon
 * `main.py` — Application entry point. Solves single-instance locks, initializes QApplication, PitchCore, ClipboardManager, and starts VoiceAssistant.
 * `config.json` — Local configuration file storing hotkeys, visualizer styles, and STT model settings.
 * `requirements.txt` — Project dependencies (`PyQt6`, `onnx-asr[cpu,hub]`, `soundfile`, `sounddevice`, `numpy`, `keyboard`, `pyperclip`).
+* `Pitch.spec` — PyInstaller packaging configuration (configured for onedir mode).
+* `installer.iss` — Inno Setup script to generate single-file Windows installer (`PITCH_Setup.exe`).
+* `build.ps1` — Automated script to run PyInstaller and compile the Inno Setup installer.
 
 ---
 
