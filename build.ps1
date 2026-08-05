@@ -1,7 +1,7 @@
 # PITCH Build & Packaging Script
 
 Write-Host "[1/2] Building PyInstaller package (onedir)..." -ForegroundColor Cyan
-pyinstaller Pitch.spec
+pyinstaller -y Pitch.spec
 
 if ($LASTEXITCODE -ne 0) {
     Write-Host "[Error] PyInstaller build failed." -ForegroundColor Red
