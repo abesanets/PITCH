@@ -1,0 +1,12 @@
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.vscode/
+build/
+dist/
+*.egg-info/
+pitch.log
+*.wav
+temp/

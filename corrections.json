@@ -1,0 +1,13 @@
+{
+  "деплоймнет": "deployment",
+  "деплоймент": "deployment",
+  "ридакс": "Redux",
+  "постгрес": "PostgreSQL",
+  "постгресс": "PostgreSQL",
+  "кубернетес": "Kubernetes",
+  "докер": "Docker",
+  "гитхаб": "GitHub",
+  "пайтон": "Python",
+  "тайпскрипт": "TypeScript",
+  "реакт": "React"
+}
