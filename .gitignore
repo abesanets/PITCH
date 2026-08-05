@@ -10,3 +10,6 @@ dist/
 pitch.log
 *.wav
 temp/
+config.json
+history.json
+
