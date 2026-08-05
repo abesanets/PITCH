@@ -150,5 +150,5 @@ class VoiceAssistant:
         sys.exit(0)
 
     def run(self):
-        print("PITCH v1.12 запущен. Удерживайте Ctrl+Win для диктовки.")
+        print("PITCH v1.5 запущен. Удерживайте Ctrl+Win для диктовки.")
         return self.app.exec()

@@ -39,7 +39,7 @@ powershell -ExecutionPolicy Bypass -File build.ps1
 ```
 
 - PyInstaller compiles the application into `dist/PITCH/` (onedir mode for instantaneous startup).
-- If [Inno Setup 6](https://jrsoftware.org/isdl.php) is installed, `installer.iss` automatically builds `dist/PITCH_Setup_v1.12.exe`.
+- If [Inno Setup 6](https://jrsoftware.org/isdl.php) is installed, `installer.iss` automatically builds `dist/PITCH_Setup_v1.5.exe`.
 
 ## Hotkeys and Controls
 

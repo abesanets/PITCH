@@ -1,5 +1,5 @@
 #define MyAppName "PITCH"
-#define MyAppVersion "1.12"
+#define MyAppVersion "1.5"
 #define MyAppPublisher "Alex"
 #define MyAppExeName "PITCH.exe"
 

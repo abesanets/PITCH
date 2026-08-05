@@ -21,7 +21,7 @@ if ($isccPath) {
     Write-Host "[2/2] Compiling Inno Setup installer..." -ForegroundColor Green
     & $isccPath installer.iss
     if ($LASTEXITCODE -eq 0) {
-        Write-Host "`n[Success] PITCH installer built in dist/PITCH_Setup_v1.12.exe!" -ForegroundColor Green
+        Write-Host "`n[Success] PITCH installer built in dist/PITCH_Setup_v1.5.exe!" -ForegroundColor Green
     }
 } else {
     Write-Host "`n[Info] PyInstaller build complete in 'dist/PITCH/' folder." -ForegroundColor Yellow
