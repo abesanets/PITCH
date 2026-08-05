@@ -34,8 +34,6 @@ class ToggleSwitch(QWidget):
         self._checked = v; self._handle_pos = 1.0 if v else 0.0; self.update()
     def set_theme(self, t): self._theme = t; self.update()
 
-    def set_colors(self, c1, c2): pass
-
     def mousePressEvent(self, e):
         self._checked = not self._checked
         self._anim.setStartValue(self._handle_pos)
@@ -103,7 +101,6 @@ class SegmentedControl(QWidget):
     def currentIndex(self): return self._current
     def setCurrentIndex(self, idx): self._current = idx; self._update_styles()
     def set_theme(self, t): self._theme = t; self._update_styles()
-    def set_accent(self, primary_hex): pass
 
     def _update_styles(self):
         active_bg   = "#f0f0f5"

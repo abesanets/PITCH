@@ -6,6 +6,7 @@ from PyQt6.QtWidgets import (
 from PyQt6.QtCore import Qt
 
 from ...widgets import ToggleSwitch, SegmentedControl
+from ._helpers import update_hotkey_badge
 
 
 _HOTKEY_OPTIONS = [
@@ -164,10 +165,5 @@ def auto_save_settings(d) -> None:
     d.config["theme"] = "dark"
     d.config["run_on_startup"] = d.startup_toggle.isChecked()
     d.save_callback(d.config)
-    _update_hotkey_badge(d)
+    update_hotkey_badge(d)
 
-
-def _update_hotkey_badge(d) -> None:
-    h1 = d.config.get("hotkey_1", "ctrl+windows").upper()
-    if hasattr(d, "hotkey_badge") and d.hotkey_badge:
-        d.hotkey_badge.setText(h1)

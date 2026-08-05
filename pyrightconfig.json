@@ -1,7 +1,4 @@
 {
-  "extraPaths": [
-    "C:\\Users\\Magic\\AppData\\Local\\Programs\\Python\\Python314\\Lib\\site-packages"
-  ],
   "reportMissingTypeStubs": "none",
   "reportGeneralTypeIssues": "none",
   "reportOptionalMemberAccess": "none",

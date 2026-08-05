@@ -5,6 +5,7 @@ from PyQt6.QtWidgets import (
 from PyQt6.QtCore import Qt
 
 from core import history_manager
+from ._helpers import update_hotkey_badge
 
 
 def build_overview_tab(d) -> QWidget:
@@ -55,7 +56,7 @@ def build_overview_tab(d) -> QWidget:
     hk_text.setObjectName("FieldLbl")
     hkl.addWidget(hk_text)
     hkl.addStretch()
-    d.hotkey_badge = QLabel(d.config.get("hotkey", "ctrl+windows").upper())
+    d.hotkey_badge = QLabel(d.config.get("hotkey_1", "ctrl+windows").upper())
     d.hotkey_badge.setObjectName("HotkeyBadge")
     hkl.addWidget(d.hotkey_badge)
     lay.addWidget(hotkey_card)
@@ -125,7 +126,7 @@ def update_statistics(d) -> None:
     d.val_lat.setText(f"{stats['avg_total_latency']:.1f} с")
     avg_rtf = stats.get("avg_rtf", 0.05)
     d.val_rtf.setText(f"{avg_rtf:.2f}x RTF")
-    _update_hotkey_badge(d)
+    update_hotkey_badge(d)
 
     entries = history_manager.load_history()[:5]
     for i, (item_frame, snippet_lbl, ts_lbl, right_lbl) in enumerate(d.recent_items):
@@ -144,7 +145,3 @@ def update_statistics(d) -> None:
             item_frame.mousePressEvent = None
 
 
-def _update_hotkey_badge(d) -> None:
-    h1 = d.config.get("hotkey_1", "ctrl+windows").upper()
-    if hasattr(d, "hotkey_badge") and d.hotkey_badge:
-        d.hotkey_badge.setText(h1)

@@ -1,11 +1,10 @@
 import sys
 import os
 import subprocess
-import pyperclip
 from PyQt6.QtWidgets import QApplication, QSystemTrayIcon, QMenu
 from PyQt6.QtGui import QIcon, QPixmap, QPainter, QColor, QBrush
-from PyQt6.QtCore import Qt
 
+from core import __version__
 from core.config_manager import load_config, save_config
 from ..visualizer.widgets import OverlayWindow
 from .dashboard import DashboardWindow
@@ -108,7 +107,9 @@ class VoiceAssistant:
     def on_processing_done(self, text):
         if text and not text.startswith("Error:"):
             # Backup to clipboard
-            pyperclip.copy(text)
+            clipboard = self.app.clipboard()
+            if clipboard:
+                clipboard.setText(text)
             self.clipboard.paste()
         elif text.startswith("Error:"):
             print(text)
@@ -150,5 +151,5 @@ class VoiceAssistant:
         sys.exit(0)
 
     def run(self):
-        print("PITCH v1.5 запущен. Удерживайте Ctrl+Win для диктовки.")
+        print(f"PITCH v{__version__} запущен. Удерживайте Ctrl+Win для диктовки.")
         return self.app.exec()

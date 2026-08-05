@@ -44,9 +44,9 @@ def generate_branding_assets():
         cropped = temp_img.crop(bbox)
         w, h = cropped.size
         
-        # Scale to fit inside render_size (1024) with a tiny safety margin (4%)
+        # Scale to fit inside render_size (1024) utilizing 100% of canvas
         render_size = 1024
-        target_content_size = int(render_size * 0.96) # 96% fill factor (minimal padding)
+        target_content_size = 1024  # 100% fill factor for maximum tray icon size
         
         scale = target_content_size / max(w, h)
         new_w = int(w * scale)
@@ -60,7 +60,7 @@ def generate_branding_assets():
         x = (render_size - new_w) // 2
         y = (render_size - new_h) // 2
         img.paste(resized, (x, y), resized)
-        print("Successfully auto-cropped and maximized the letter scale.")
+        print("Successfully auto-cropped and maximized the letter scale to 100%.")
     else:
         img = temp_img.resize((1024, 1024), Image.Resampling.LANCZOS)
 

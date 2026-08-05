@@ -12,6 +12,7 @@ from PyQt6.QtCore import (
 )
 from PyQt6.QtGui import QPainter, QPen, QBrush, QIcon, QColor, QFont
 
+from core import __version__
 from ..styles import get_stylesheet, get_resource_path
 from .tabs.overview    import build_overview_tab, update_statistics
 from .tabs.visualizer  import build_visualizer_tab
@@ -187,7 +188,7 @@ class DashboardWindow(QWidget):
         lay.addStretch()
 
 
-        ver_lbl = QLabel("v1.5")
+        ver_lbl = QLabel(f"v{__version__}")
         ver_lbl.setObjectName("VersionLbl")
         lay.addWidget(ver_lbl)
 
@@ -261,9 +262,7 @@ class DashboardWindow(QWidget):
 
     def apply_theme(self, theme, preset=None):
         self.theme_name = theme
-        if preset is None:
-            preset = self.config.get("visualizer_color_preset", "mono")
-        self.setStyleSheet(get_stylesheet(theme, preset))
+        self.setStyleSheet(get_stylesheet(theme))
 
         icon_path = get_resource_path(os.path.join("assets", "p.png"))
         if os.path.exists(icon_path):

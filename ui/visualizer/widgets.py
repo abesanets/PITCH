@@ -6,6 +6,7 @@ from PyQt6.QtGui import QPainter, QColor, QPen, QBrush, QCursor, QPainterPath
 
 from ..styles import _lerp_color
 from ..styles_data import VISUALIZER_PRESETS, VISUALIZER_SIZES
+from .renderers import draw_wave_visualizer, draw_matrix_visualizer
 
 
 def _draw_pixel_pill(painter, ox, oy, ow, oh, fill_color, stroke_color):
@@ -51,9 +52,7 @@ def _draw_pixel_pill(painter, ox, oy, ow, oh, fill_color, stroke_color):
     path.closeSubpath()
     
     painter.fillPath(path, QBrush(fill_color))
-    pen = QPen(stroke_color, 2)
-    pen.setJoinStyle(Qt.PenJoinStyle.MiterJoin)
-    painter.setPen(pen)
+    painter.setPen(Qt.PenStyle.NoPen)
     painter.drawPath(path)
 
 
@@ -114,79 +113,18 @@ class PreviewWidget(QWidget):
         
         preset = VISUALIZER_PRESETS.get(self._preset_key, VISUALIZER_PRESETS["mono"])
         vol = self._demo_volume * self._sensitivity
-        if self._style == "matrix":    self._draw_matrix(p, ox, oy, ow, oh, preset, vol)
-        else:                          self._draw_wave(p, ox, oy, ow, oh, preset, vol)
+        if self._style == "matrix":
+            draw_matrix_visualizer(p, ox, oy, ow, oh, preset, self._theme, vol, self._phase)
+        else:
+            draw_wave_visualizer(p, ox, oy, ow, oh, preset, self._theme, vol, self._phase)
         p.end()
 
     def _draw_wave(self, p, ox, oy, ow, oh, preset, volume):
-        cy = oy + oh / 2; max_amp = oh * 0.38; pad = 6
-        for wc in preset["waves"]:
-            color = wc[self._theme]; amp_m = wc["amp"]; freq = wc["freq"]
-            phase_m = wc["phase"]; pen_w = wc["width"]
-            path = QPainterPath(); first = True
-            curr_amp = max(0.5 * amp_m, max_amp * min(1.0, volume) * amp_m)
-            for xi in range(pad, int(ow) - pad):
-                t = (xi - pad) / max(1, ow - 2 * pad)
-                env = math.pow(math.sin(math.pi * t), 2.0)
-                y = cy + curr_amp * env * math.sin(xi * freq + self._phase * phase_m)
-                if first: path.moveTo(ox + xi, y); first = False
-                else: path.lineTo(ox + xi, y)
-            pen = QPen(color); pen.setWidthF(pen_w); pen.setCapStyle(Qt.PenCapStyle.RoundCap)
-            p.setPen(pen); p.drawPath(path)
+        draw_wave_visualizer(p, ox, oy, ow, oh, preset, self._theme, volume, self._phase)
 
     def _draw_matrix(self, p, ox, oy, ow, oh, preset, volume):
-        """Discrete Diamond Pixel Field (7-row layout with top r=0 and bottom r=6 1-px tips trimmed)"""
-        cols, rows = 19, 7
-        cell_size = max(2.5, min(4.0, (oh - 10) / rows - 1.2))
-        gap = 1.5
-        
-        grid_w = cols * cell_size + (cols - 1) * gap
-        grid_h = rows * cell_size + (rows - 1) * gap
-        
-        start_x = ox + (ow - grid_w) / 2.0
-        start_y = oy + (oh - grid_h) / 2.0
+        draw_matrix_visualizer(p, ox, oy, ow, oh, preset, self._theme, volume, self._phase)
 
-        mid_c = (cols - 1) / 2.0
-        mid_r = (rows - 1) / 2.0
-
-        colors = [w[self._theme] for w in preset["waves"]]
-        primary_color = colors[0]
-        bg_dim = QColor(primary_color.red(), primary_color.green(), primary_color.blue(), 20)
-
-        p.setPen(Qt.PenStyle.NoPen)
-
-        for r in range(rows):
-            if r == 0 or r == 6:
-                continue
-
-            for c in range(cols):
-                norm_x = abs(c - mid_c) / max(1, mid_c)
-                norm_y = abs(r - mid_r) / max(1, mid_r)
-                diamond_val = norm_x + norm_y
-
-                if diamond_val > 1.15:
-                    continue
-
-                px_hash = ((c * 13 + r * 29) % 11) / 35.0
-                center_dist = diamond_val * 0.5 + min(norm_x, norm_y) * 0.5 + px_hash
-                
-                pulse = 0.05 * math.sin(self._phase * 1.4 - center_dist * 2.0)
-                threshold = center_dist * 0.60
-                side_damp = 1.0 - 0.3 * norm_x
-
-                bx = start_x + c * (cell_size + gap)
-                by = start_y + r * (cell_size + gap)
-
-                if volume > threshold:
-                    intensity = (volume - threshold) / (1.0 - threshold + 0.01) + pulse
-                    intensity = min(1.0, max(0.2, intensity * side_damp))
-                    c_col = _lerp_color(bg_dim, primary_color, intensity)
-                    p.setBrush(QBrush(c_col))
-                else:
-                    faint_col = QColor(primary_color.red(), primary_color.green(), primary_color.blue(), int(25 * side_damp))
-                    p.setBrush(QBrush(faint_col))
-
-                p.drawRect(QRectF(bx, by, cell_size, cell_size))
 
 
 class OverlayWindow(QWidget):
@@ -305,20 +243,7 @@ class OverlayWindow(QWidget):
         painter.end()
 
     def _paint_wave(self, painter, w, h, preset, vol):
-        cy = h / 2; max_amp = h * 0.38
-        for wc in preset["waves"]:
-            color = wc[self.theme]; amp_m = wc["amp"]; freq = wc["freq"]
-            phase_m = wc["phase"]; pen_w = wc["width"]
-            path = QPainterPath(); first = True
-            curr_amp = max(0.5 * amp_m, max_amp * min(1.0, vol) * amp_m)
-            for x in range(6, w - 6):
-                t = (x - 6) / max(1, w - 12)
-                env = math.pow(math.sin(math.pi * t), 2.0)
-                y = cy + curr_amp * env * math.sin(x * freq + self.phase * phase_m)
-                if first: path.moveTo(x, y); first = False
-                else: path.lineTo(x, y)
-            pen = QPen(color); pen.setWidthF(pen_w); pen.setCapStyle(Qt.PenCapStyle.RoundCap)
-            painter.setPen(pen); painter.drawPath(path)
+        draw_wave_visualizer(painter, 0, 0, w, h, preset, self.theme, vol, self.phase)
 
     def _paint_wave_processing(self, painter, w, h, preset):
         """Calm, smooth flowing wave processing animation for Wave visualizer style"""
@@ -344,64 +269,13 @@ class OverlayWindow(QWidget):
         painter.drawPath(path)
 
     def _paint_matrix(self, painter, w, h, preset, vol):
-        """Discrete Diamond Pixel Field (7-row layout with top r=0 and bottom r=6 1-px tips trimmed)"""
-        cols, rows = 19, 7
-        cell_size = max(2.5, min(4.0, (h - 10) / rows - 1.2))
-        gap = 1.5
-
-        grid_w = cols * cell_size + (cols - 1) * gap
-        grid_h = rows * cell_size + (rows - 1) * gap
-
-        start_x = (w - grid_w) / 2.0
-        start_y = (h - grid_h) / 2.0
-
-        mid_c = (cols - 1) / 2.0
-        mid_r = (rows - 1) / 2.0
-
-        colors = [wc[self.theme] for wc in preset["waves"]]
-        primary_color = colors[0]
-        bg_dim = QColor(primary_color.red(), primary_color.green(), primary_color.blue(), 20)
-
-        painter.setPen(Qt.PenStyle.NoPen)
-
-        for r in range(rows):
-            if r == 0 or r == 6:
-                continue
-
-            for c in range(cols):
-                norm_x = abs(c - mid_c) / max(1, mid_c)
-                norm_y = abs(r - mid_r) / max(1, mid_r)
-                diamond_val = norm_x + norm_y
-
-                if diamond_val > 1.15:
-                    continue
-
-                px_hash = ((c * 13 + r * 29) % 11) / 35.0
-                center_dist = diamond_val * 0.5 + min(norm_x, norm_y) * 0.5 + px_hash
-
-                pulse = 0.05 * math.sin(self.phase * 1.4 - center_dist * 2.0)
-                threshold = center_dist * 0.60
-                side_damp = 1.0 - 0.3 * norm_x
-
-                bx = start_x + c * (cell_size + gap)
-                by = start_y + r * (cell_size + gap)
-
-                if vol > threshold:
-                    intensity = (vol - threshold) / (1.0 - threshold + 0.01) + pulse
-                    intensity = min(1.0, max(0.2, intensity * side_damp))
-                    c_col = _lerp_color(bg_dim, primary_color, intensity)
-                    painter.setBrush(QBrush(c_col))
-                else:
-                    faint_col = QColor(primary_color.red(), primary_color.green(), primary_color.blue(), int(25 * side_damp))
-                    painter.setBrush(QBrush(faint_col))
-
-                painter.drawRect(QRectF(bx, by, cell_size, cell_size))
+        draw_matrix_visualizer(painter, 0, 0, w, h, preset, self.theme, vol, self.phase)
 
     def _paint_matrix_processing(self, painter, w, h, preset):
         """Matrix Processing Animation: Rotating Pixel Snake travelling cleanly on exact Matrix cells (no background grid)"""
         cols, rows = 19, 7
-        cell_size = max(2.5, min(4.0, (h - 10) / rows - 1.2))
-        gap = 1.5
+        cell_size = max(2.0, (h - 6.0) / rows * 0.75)
+        gap = max(1.0, cell_size * 0.4)
 
         grid_w = cols * cell_size + (cols - 1) * gap
         grid_h = rows * cell_size + (rows - 1) * gap

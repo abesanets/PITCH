@@ -21,7 +21,7 @@ def _lerp_color(c1, c2, t):
     )
 
 
-def get_stylesheet(theme="dark", preset_key="mono"):
+def get_stylesheet(theme="dark"):
     """Generate stylesheet based on theme (Dark Pixel aesthetic)."""
     bg          = "#111115"
     sidebar     = "#16161e"
