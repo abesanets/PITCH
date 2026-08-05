@@ -85,10 +85,10 @@ class WindowsKeyboardHook:
 
     def stop(self):
         self.running = False
-        if _WINDOWS and self.hook_id:
+        if _WINDOWS and self.thread and self.thread.ident:
             import ctypes
-            # Post a dummy message to wake up the message loop and unhook
-            ctypes.windll.user32.PostThreadMessageW(self.thread.ident, 0, 0, 0)
+            WM_QUIT = 0x0012
+            ctypes.windll.user32.PostThreadMessageW(self.thread.ident, WM_QUIT, 0, 0)
 
     def _run_hook_loop(self):
         import ctypes

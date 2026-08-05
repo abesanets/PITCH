@@ -1,22 +1,23 @@
-"""Settings tab: Hotkeys and startup configuration."""
+"""Settings tab: STT engine status, hotkey, recording duration, and system configuration."""
 from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QFrame,
     QScrollArea, QComboBox
 )
 from PyQt6.QtCore import Qt
 
-from ...widgets import ToggleSwitch
+from ...widgets import ToggleSwitch, SegmentedControl
 
 
-_HOTKEY_OPTIONS_1 = ["ctrl+windows", "shift+windows", "ctrl+shift+windows", "ctrl+alt", "ctrl+shift", "ctrl+alt+space", "ctrl+shift+space", "left alt+space", "f8"]
-_HOTKEY_OPTIONS_2 = ["shift+windows", "ctrl+windows", "ctrl+shift+windows", "ctrl+alt", "ctrl+shift", "ctrl+alt+space", "ctrl+shift+space", "left alt+space", "f8"]
-_MODE_OPTIONS     = ["Стандартный (Словарная автозамена)", "Сырой STT"]
-_MODE_TO_KEY      = {"Стандартный (Словарная автозамена)": "default", "Сырой STT": "raw"}
-_KEY_TO_MODE      = {v: k for k, v in _MODE_TO_KEY.items()}
+_HOTKEY_OPTIONS = [
+    "ctrl+windows", "shift+windows", "ctrl+shift+windows",
+    "ctrl+alt", "ctrl+shift", "ctrl+alt+space",
+    "ctrl+shift+space", "left alt+space", "f8"
+]
+_DUR_VALUES = [0.3, 0.5, 1.0, 0.0]
 
 
 def build_settings_tab(d) -> QWidget:
-    """Build the Settings tab and attach relevant attributes to d."""
+    """Build the merged Settings tab and attach relevant attributes to d."""
     page = QWidget()
     outer = QHBoxLayout(page)
     outer.setContentsMargins(0, 0, 0, 0)
@@ -42,8 +43,8 @@ def build_settings_tab(d) -> QWidget:
     title.setObjectName("PageTitle")
     lay.addWidget(title)
 
-    lay.addWidget(_build_api_card(d))
-    lay.addWidget(_build_input_model_card(d))
+    lay.addWidget(_build_engine_card(d))
+    lay.addWidget(_build_input_card(d))
     lay.addWidget(_build_system_card(d))
     lay.addStretch()
 
@@ -54,7 +55,7 @@ def build_settings_tab(d) -> QWidget:
     return page
 
 
-def _build_api_card(d) -> QFrame:
+def _build_engine_card(d) -> QFrame:
     card = QFrame()
     card.setObjectName("Card")
     acl = QVBoxLayout(card)
@@ -65,77 +66,56 @@ def _build_api_card(d) -> QFrame:
     api_cap.setObjectName("SectionCap")
     acl.addWidget(api_cap)
 
-    status_lbl = QLabel("GigaAM v3 (Сбер) • Локальный (CPU, 0.05x RTF)")
+    status_lbl = QLabel("GigaAM v3 (Сбер) • Silero VAD")
     status_lbl.setObjectName("FieldLbl")
     acl.addWidget(status_lbl)
 
-    info_lbl = QLabel("Полностью автономная модель. Облачные API и ключи не требуются.")
+    info_lbl = QLabel(
+        "Локальная автономная модель распознавания речи (CPU ONNX Execution Provider). "
+        "Оптимизирована под русский язык."
+    )
+    info_lbl.setWordWrap(True)
     info_lbl.setObjectName("DetailMeta")
     acl.addWidget(info_lbl)
 
     return card
 
 
-def _build_input_model_card(d) -> QFrame:
+def _build_input_card(d) -> QFrame:
     card = QFrame()
     card.setObjectName("Card")
     icl = QVBoxLayout(card)
     icl.setContentsMargins(16, 14, 16, 14)
     icl.setSpacing(14)
 
+    # Hotkey selection
     d.hotkey_1_combo = QComboBox()
-    d.hotkey_1_combo.addItems(_HOTKEY_OPTIONS_1)
+    d.hotkey_1_combo.addItems(_HOTKEY_OPTIONS)
     d.hotkey_1_combo.setCurrentText(d.config.get("hotkey_1", "ctrl+windows"))
     d.hotkey_1_combo.currentTextChanged.connect(d._auto_save_settings)
+    icl.addWidget(_setting_cell("СОЧЕТАНИЕ КЛАВИШ", d.hotkey_1_combo))
 
-    d.mode_1_combo = QComboBox()
-    d.mode_1_combo.addItems(_MODE_OPTIONS)
-    d.mode_1_combo.setCurrentText(_KEY_TO_MODE.get(d.config.get("mode_1", "default"), "Стандартный (Словарная автозамена)"))
-    d.mode_1_combo.currentTextChanged.connect(d._auto_save_settings)
+    # Recording minimum duration selection
+    d.min_duration_seg = SegmentedControl(["0.3с", "0.5с", "1с", "Выкл"])
+    dur_map = {0.3: 0, 0.5: 1, 1.0: 2, 0.0: 3}
+    saved_dur = d.config.get("min_recording_duration", 0.5)
+    d.min_duration_seg.setCurrentIndex(dur_map.get(saved_dur, 1))
+    d.min_duration_seg.currentChanged.connect(d._auto_save_settings)
 
-    icl.addWidget(_setting_cell("СОЧЕТАНИЕ КЛАВИШ 1", d.hotkey_1_combo))
-    icl.addWidget(_setting_cell("РЕЖИМ 1", d.mode_1_combo))
-
-    d.hotkey_2_enabled_cb = ToggleSwitch(checked=d.config.get("hotkey_2_enabled", False))
-    d.hotkey_2_enabled_cb.toggled.connect(d._auto_save_settings)
-    d.hotkey_2_enabled_cb.toggled.connect(d._toggle_hotkey_2_widgets)
-
-    h2_toggle_row = QHBoxLayout()
-    h2_toggle_row.setSpacing(12)
-    h2_lbl_block = QVBoxLayout()
-    h2_lbl_block.setSpacing(2)
-    h2_title = QLabel("Второе сочетание клавиш")
-    h2_title.setObjectName("FieldLbl")
-    h2_sub = QLabel("Назначить отдельное сочетание клавиш")
-    h2_sub.setObjectName("DetailMeta")
-    h2_lbl_block.addWidget(h2_title)
-    h2_lbl_block.addWidget(h2_sub)
-    h2_toggle_row.addLayout(h2_lbl_block, 1)
-    h2_toggle_row.addWidget(d.hotkey_2_enabled_cb)
-    icl.addLayout(h2_toggle_row)
-
-    d.h2_widget = QWidget()
-    h2_layout = QVBoxLayout(d.h2_widget)
-    h2_layout.setContentsMargins(0, 0, 0, 0)
-    h2_layout.setSpacing(14)
-
-    d.hotkey_2_combo = QComboBox()
-    d.hotkey_2_combo.addItems(_HOTKEY_OPTIONS_2)
-    d.hotkey_2_combo.setCurrentText(d.config.get("hotkey_2", "shift+windows"))
-    d.hotkey_2_combo.currentTextChanged.connect(d._auto_save_settings)
-
-    d.mode_2_combo = QComboBox()
-    d.mode_2_combo.addItems(_MODE_OPTIONS)
-    d.mode_2_combo.setCurrentText(_KEY_TO_MODE.get(d.config.get("mode_2", "raw"), "Сырой STT"))
-    d.mode_2_combo.currentTextChanged.connect(d._auto_save_settings)
-
-    h2_layout.addWidget(_setting_cell("СОЧЕТАНИЕ КЛАВИШ 2", d.hotkey_2_combo))
-    h2_layout.addWidget(_setting_cell("РЕЖИМ 2", d.mode_2_combo))
-    icl.addWidget(d.h2_widget)
-    d.h2_widget.setVisible(d.hotkey_2_enabled_cb.isChecked())
+    dur_cell = QWidget()
+    dur_vl = QVBoxLayout(dur_cell)
+    dur_vl.setContentsMargins(0, 0, 0, 0)
+    dur_vl.setSpacing(6)
+    dur_lbl = QLabel("МИНИМАЛЬНАЯ ДЛИТЕЛЬНОСТЬ ЗАПИСИ")
+    dur_lbl.setObjectName("SectionCap")
+    dur_sub = QLabel("Короче — игнорировать как случайное нажатие")
+    dur_sub.setObjectName("DetailMeta")
+    dur_vl.addWidget(dur_lbl)
+    dur_vl.addWidget(dur_sub)
+    dur_vl.addWidget(d.min_duration_seg)
+    icl.addWidget(dur_cell)
 
     return card
-
 
 
 def _build_system_card(d) -> QFrame:
@@ -180,28 +160,14 @@ def _setting_cell(label_text: str, widget) -> QWidget:
 
 def auto_save_settings(d) -> None:
     d.config["hotkey_1"] = d.hotkey_1_combo.currentText()
-    d.config["mode_1"] = _MODE_TO_KEY.get(d.mode_1_combo.currentText(), "default")
-    d.config["hotkey_2_enabled"] = d.hotkey_2_enabled_cb.isChecked()
-    d.config["hotkey_2"] = d.hotkey_2_combo.currentText()
-    d.config["mode_2"] = _MODE_TO_KEY.get(d.mode_2_combo.currentText(), "raw")
+    d.config["min_recording_duration"] = _DUR_VALUES[d.min_duration_seg.currentIndex()]
     d.config["theme"] = "dark"
     d.config["run_on_startup"] = d.startup_toggle.isChecked()
     d.save_callback(d.config)
     _update_hotkey_badge(d)
 
 
-def on_base_url_changed(d) -> None:
-    pass
-
-
-def toggle_api_visibility(d) -> None:
-    pass
-
-
 def _update_hotkey_badge(d) -> None:
     h1 = d.config.get("hotkey_1", "ctrl+windows").upper()
-    if d.config.get("hotkey_2_enabled", False):
-        h2 = d.config.get("hotkey_2", "shift+windows").upper()
-        d.hotkey_badge.setText(f"{h1} / {h2}")
-    else:
+    if hasattr(d, "hotkey_badge") and d.hotkey_badge:
         d.hotkey_badge.setText(h1)

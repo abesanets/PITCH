@@ -11,8 +11,10 @@ def load_history():
             with open(HISTORY_FILE, "r", encoding="utf-8") as f:
                 data = json.load(f)
                 if isinstance(data, list):
-                    # Filter out any entries with empty/whitespace-only cleaned_text
-                    filtered = [entry for entry in data if entry.get("cleaned_text", "").strip()]
+                    filtered = [
+                        entry for entry in data
+                        if (entry.get("cleaned_text") or entry.get("text") or "").strip()
+                    ]
                     if len(filtered) != len(data):
                         save_history(filtered)
                     return filtered
@@ -27,32 +29,29 @@ def save_history(history):
     except Exception as e:
         print(f"Error saving history: {e}")
 
-def add_history_entry(model, raw_text, cleaned_text, whisper_latency, llm_latency):
-    if not cleaned_text or not cleaned_text.strip():
+def add_history_entry(model: str, text: str, stt_latency: float, rtf: float = 0.0, audio_duration: float = 0.0):
+    if not text or not text.strip():
         return None
 
     history = load_history()
-    
-    word_count = len(cleaned_text.split())
-    char_count = len(cleaned_text)
-    
-    stt_lat = round(whisper_latency, 2)
-    post_lat = round(llm_latency, 2)
+    cleaned = text.strip()
+    word_count = len(cleaned.split())
+    char_count = len(cleaned)
+    stt_lat = round(stt_latency, 2)
 
     entry = {
         "timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
         "model": model,
-        "raw_text": raw_text.strip(),
-        "cleaned_text": cleaned_text.strip(),
-        "whisper_latency": stt_lat,
+        "raw_text": cleaned,
+        "cleaned_text": cleaned,
         "stt_latency": stt_lat,
-        "llm_latency": post_lat,
-        "postprocess_latency": post_lat,
-        "total_latency": round(stt_lat + post_lat, 2),
+        "total_latency": stt_lat,
+        "audio_duration": round(audio_duration, 2),
+        "rtf": round(rtf, 3),
         "word_count": word_count,
         "char_count": char_count
     }
-    
+
     history.insert(0, entry)
     history = history[:MAX_HISTORY_ENTRIES]
     save_history(history)
@@ -68,28 +67,30 @@ def clear_history():
 def get_statistics():
     history = load_history()
     total_dictations = len(history)
-    
+
     if total_dictations == 0:
         return {
             "total_dictations": 0,
-            "avg_whisper_latency": 0.0,
-            "avg_llm_latency": 0.0,
+            "avg_stt_latency": 0.0,
             "avg_total_latency": 0.0,
+            "avg_rtf": 0.05,
             "total_words": 0,
             "total_chars": 0
         }
-        
-    total_whisper_lat = sum(e.get("stt_latency", e.get("whisper_latency", 0.0)) for e in history)
-    total_llm_lat = sum(e.get("postprocess_latency", e.get("llm_latency", 0.0)) for e in history)
+
+    total_stt_lat = sum(e.get("stt_latency", e.get("whisper_latency", 0.0)) for e in history)
     total_total_lat = sum(e.get("total_latency", 0.0) for e in history)
     total_words = sum(e.get("word_count", 0) for e in history)
     total_chars = sum(e.get("char_count", 0) for e in history)
-    
+
+    valid_rtf_entries = [e.get("rtf") for e in history if e.get("rtf") is not None and e.get("rtf") > 0]
+    avg_rtf = round(sum(valid_rtf_entries) / len(valid_rtf_entries), 2) if valid_rtf_entries else 0.05
+
     return {
         "total_dictations": total_dictations,
-        "avg_whisper_latency": round(total_whisper_lat / total_dictations, 2),
-        "avg_llm_latency": round(total_llm_lat / total_dictations, 2),
+        "avg_stt_latency": round(total_stt_lat / total_dictations, 2),
         "avg_total_latency": round(total_total_lat / total_dictations, 2),
+        "avg_rtf": avg_rtf,
         "total_words": total_words,
         "total_chars": total_chars
     }

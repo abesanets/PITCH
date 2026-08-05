@@ -35,8 +35,7 @@ def main():
     sys.stderr = redirector
 
     assistant = VoiceAssistant(core=core, clipboard=clipboard)
-    assistant.run()
-    sys.exit(app.exec())
+    sys.exit(assistant.run())
 
 
 def ensure_single_instance():

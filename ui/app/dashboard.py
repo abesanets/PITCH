@@ -21,10 +21,6 @@ from .tabs.history     import (
 )
 from .tabs.settings    import (
     build_settings_tab, auto_save_settings,
-    on_base_url_changed, toggle_api_visibility,
-)
-from .tabs.recognition import (
-    build_recognition_tab, update_style_ui, auto_save_recognition,
 )
 from ..widgets import ToggleSwitch, OutlinedLabel
 
@@ -143,9 +139,6 @@ class DashboardWindow(QWidget):
         self.stack.addWidget(build_visualizer_tab(self))
         self.stack.addWidget(build_history_tab(self))
         self.stack.addWidget(build_settings_tab(self))
-        self.stack.addWidget(build_recognition_tab(self))
-
-        self._update_style_ui(self.config.get("formatting_style", "default"))
 
         icon_path = get_resource_path(os.path.join("assets", "p.png"))
         if os.path.exists(icon_path):
@@ -182,11 +175,10 @@ class DashboardWindow(QWidget):
 
         self.nav_buttons = []
         nav_items = [
-            ("Обзор",         0, "overview"),
-            ("Визуализатор",  1, "visualizer"),
-            ("История",       2, "history"),
-            ("Настройки",     3, "settings"),
-            ("Распознавание", 4, "predict"),
+            ("Обзор",        0, "overview"),
+            ("Визуализатор", 1, "visualizer"),
+            ("История",      2, "history"),
+            ("Настройки",    3, "settings"),
         ]
         for label, idx, icon_key in nav_items:
             btn = QPushButton(" " + label)
@@ -239,30 +231,6 @@ class DashboardWindow(QWidget):
     def _auto_save_settings(self):
         auto_save_settings(self)
 
-    def _on_base_url_changed(self):
-        on_base_url_changed(self)
-
-    def toggle_api_visibility(self):
-        toggle_api_visibility(self)
-
-    def _toggle_hotkey_2_widgets(self):
-        if hasattr(self, "h2_widget") and self.h2_widget:
-            self.h2_widget.setVisible(self.hotkey_2_enabled_cb.isChecked())
-
-    def _auto_save_recognition(self):
-        auto_save_recognition(self)
-
-    def _select_style(self, key):
-        self.config["formatting_style"] = key
-        self._update_style_ui(key)
-        self._auto_save_recognition()
-
-    def _on_style_seg_changed(self, idx):
-        self._select_style(self.style_keys[idx])
-
-    def _update_style_ui(self, key):
-        update_style_ui(self, key)
-
     def _on_shape_changed(self, idx):
         self.preview_widget.set_style(["wave", "bars", "scroll"][idx])
         self._auto_save_visualizer()
@@ -306,13 +274,9 @@ class DashboardWindow(QWidget):
         if os.path.exists(icon_path):
             self.setWindowIcon(QIcon(icon_path))
 
-        for widget_name in (
-            "startup_toggle", "hotkey_2_enabled_cb",
-            "hallucination_filter_toggle",
-        ):
-            w = getattr(self, widget_name, None)
-            if w:
-                w.set_theme(theme)
+        w = getattr(self, "startup_toggle", None)
+        if w:
+            w.set_theme(theme)
 
         for seg_name in ("min_duration_seg", "shape_seg", "size_seg", "bg_seg", "sens_seg"):
             w = getattr(self, seg_name, None)

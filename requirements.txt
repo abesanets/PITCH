@@ -3,6 +3,5 @@ onnx-asr[cpu,hub]
 soundfile
 sounddevice
 numpy
-rapidfuzz
 keyboard
 pyperclip

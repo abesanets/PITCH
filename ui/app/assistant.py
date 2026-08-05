@@ -111,10 +111,16 @@ class VoiceAssistant:
             print(text)
 
     def quit_app(self):
+        print("[Выход] Завершение работы PITCH...")
         self.core._monitor_running = False
-        self.core._recorder.close()
-        self.tray.hide()
+        if hasattr(self.core, "_recorder") and self.core._recorder:
+            self.core._recorder.close()
+        if hasattr(self, "tray") and self.tray:
+            self.tray.hide()
+        if hasattr(self, "dashboard") and self.dashboard:
+            self.dashboard.close()
         self.app.quit()
+        sys.exit(0)
 
     def restart_app(self):
         """Restart the application with the same arguments"""
@@ -138,8 +144,8 @@ class VoiceAssistant:
         self.core._monitor_running = False
         self.core._recorder.close()
         self.app.quit()
+        sys.exit(0)
 
     def run(self):
         print("PITCH v1.12 запущен. Удерживайте Ctrl+Win для диктовки.")
-        
-        self.app.exec()
+        return self.app.exec()

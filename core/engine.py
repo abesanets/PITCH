@@ -1,7 +1,5 @@
-import os
 import time
 import sys
-import threading
 from typing import Any
 import keyboard
 from PyQt6.QtCore import QObject, pyqtSignal
@@ -42,7 +40,6 @@ class PitchCore(QObject):
         self._recorder = recorder
         self._stt_engine = stt_engine or GigaAMEngine(
             model_name=config.get("stt_model", "gigaam-v3-e2e-rnnt"),
-            corrections_path=config.get("corrections_path", "corrections.json"),
         )
 
         self._is_recording = False
@@ -107,24 +104,21 @@ class PitchCore(QObject):
         self._is_recording = False
 
         min_duration = self._config.get("min_recording_duration", 0.4)
-        duration = time.time() - (self._recording_start_time or 0)
-        self._recorder.stop_recording()
+        audio_np, duration = self._recorder.stop_recording()
 
         if duration < min_duration and min_duration > 0:
             print(f"[Запись] Слишком короткая запись ({duration:.2f}s < {min_duration}s), игнорируем.")
             self.state_changed.emit("idle")
             return
 
+        if audio_np is None or len(audio_np) == 0:
+            self.state_changed.emit("idle")
+            return
+
         self._is_processing = True
         self.state_changed.emit("processing")
 
-        filename = self._recorder.get_temp_filename()
-        if not os.path.exists(filename):
-            self.state_changed.emit("idle")
-            self._is_processing = False
-            return
-
-        self._worker = STTWorker(filename, self._stt_engine)
+        self._worker = STTWorker(audio_np, duration, self._stt_engine)
         self._worker.result_ready.connect(self._on_worker_result)
         self._worker.error_occurred.connect(self._on_worker_error)
         self._worker.finished.connect(self._worker.deleteLater)
@@ -172,28 +166,16 @@ class PitchCore(QObject):
             return
 
         h1 = self._config.get("hotkey_1", "ctrl+windows")
-        h2_enabled = self._config.get("hotkey_2_enabled", False)
-        h2 = self._config.get("hotkey_2", "shift+windows") if h2_enabled else None
-
         try:
             if not self._hook_recording:
                 if self._is_hotkey_active(h1):
-                    self._active_hotkey = "hotkey_1"
                     self._hook_recording = True
-                    mode = self._config.get("mode_1", "default")
-                    self._request_start_recording.emit(mode)
-                elif h2 and self._is_hotkey_active(h2):
-                    self._active_hotkey = "hotkey_2"
-                    self._hook_recording = True
-                    mode = self._config.get("mode_2", "translate_en")
-                    self._request_start_recording.emit(mode)
+                    self._request_start_recording.emit("raw")
             else:
-                target_hotkey_str = h1 if self._active_hotkey == "hotkey_1" else h2
-                if not target_hotkey_str or not self._is_hotkey_active(target_hotkey_str) or event.event_type == "up":
-                    if not target_hotkey_str or not self._is_hotkey_active(target_hotkey_str):
+                if not self._is_hotkey_active(h1) or event.event_type == "up":
+                    if not self._is_hotkey_active(h1):
                         self._hook_recording = False
                         self._request_stop_recording.emit()
-                        self._active_hotkey = None
         except Exception as e:
             print(f"Hotkey event handler error: {e}")
 
@@ -202,10 +184,10 @@ class PitchCore(QObject):
         try:
             history_manager.add_history_entry(
                 model=actual_model,
-                raw_text=result["raw_text"],
-                cleaned_text=result["text"],
-                whisper_latency=result["whisper_latency"],
-                llm_latency=result["llm_latency"],
+                text=result["text"],
+                stt_latency=result["stt_latency"],
+                rtf=result.get("rtf", 0.0),
+                audio_duration=result.get("audio_duration", 0.0),
             )
         except Exception as e:
             print(f"Error saving history: {e}")

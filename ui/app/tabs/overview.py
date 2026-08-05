@@ -1,6 +1,6 @@
 """Overview tab: statistics cards, hotkey badge, recent dictations list."""
 from PyQt6.QtWidgets import (
-    QWidget, QVBoxLayout, QHBoxLayout, QLabel, QFrame, QGridLayout
+    QWidget, QVBoxLayout, QHBoxLayout, QLabel, QFrame
 )
 from PyQt6.QtCore import Qt
 
@@ -45,8 +45,6 @@ def build_overview_tab(d) -> QWidget:
     row2_lay.addWidget(c4, 1)
     row2_lay.addWidget(c5, 1)
     lay.addLayout(row2_lay)
-
-
 
     hotkey_card = QFrame()
     hotkey_card.setObjectName("Card")
@@ -125,9 +123,9 @@ def update_statistics(d) -> None:
     d.val_words.setText(str(stats["total_words"]))
     d.val_chars.setText(str(stats["total_chars"]))
     d.val_lat.setText(f"{stats['avg_total_latency']:.1f} с")
-    d.val_rtf.setText("0.05x RTF")
+    avg_rtf = stats.get("avg_rtf", 0.05)
+    d.val_rtf.setText(f"{avg_rtf:.2f}x RTF")
     _update_hotkey_badge(d)
-
 
     entries = history_manager.load_history()[:5]
     for i, (item_frame, snippet_lbl, ts_lbl, right_lbl) in enumerate(d.recent_items):
@@ -148,8 +146,5 @@ def update_statistics(d) -> None:
 
 def _update_hotkey_badge(d) -> None:
     h1 = d.config.get("hotkey_1", "ctrl+windows").upper()
-    if d.config.get("hotkey_2_enabled", False):
-        h2 = d.config.get("hotkey_2", "shift+windows").upper()
-        d.hotkey_badge.setText(f"{h1} / {h2}")
-    else:
+    if hasattr(d, "hotkey_badge") and d.hotkey_badge:
         d.hotkey_badge.setText(h1)
