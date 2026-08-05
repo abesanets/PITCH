@@ -33,24 +33,28 @@ def add_history_entry(model, raw_text, cleaned_text, whisper_latency, llm_latenc
 
     history = load_history()
     
-    # Calculate word and character count
     word_count = len(cleaned_text.split())
     char_count = len(cleaned_text)
     
+    stt_lat = round(whisper_latency, 2)
+    post_lat = round(llm_latency, 2)
+
     entry = {
         "timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
         "model": model,
         "raw_text": raw_text.strip(),
         "cleaned_text": cleaned_text.strip(),
-        "whisper_latency": round(whisper_latency, 2),
-        "llm_latency": round(llm_latency, 2),
-        "total_latency": round(whisper_latency + llm_latency, 2),
+        "whisper_latency": stt_lat,
+        "stt_latency": stt_lat,
+        "llm_latency": post_lat,
+        "postprocess_latency": post_lat,
+        "total_latency": round(stt_lat + post_lat, 2),
         "word_count": word_count,
         "char_count": char_count
     }
     
-    history.insert(0, entry)  # Prepend new entry
-    history = history[:MAX_HISTORY_ENTRIES]  # Cap size
+    history.insert(0, entry)
+    history = history[:MAX_HISTORY_ENTRIES]
     save_history(history)
     return entry
 
@@ -75,8 +79,8 @@ def get_statistics():
             "total_chars": 0
         }
         
-    total_whisper_lat = sum(e.get("whisper_latency", 0.0) for e in history)
-    total_llm_lat = sum(e.get("llm_latency", 0.0) for e in history)
+    total_whisper_lat = sum(e.get("stt_latency", e.get("whisper_latency", 0.0)) for e in history)
+    total_llm_lat = sum(e.get("postprocess_latency", e.get("llm_latency", 0.0)) for e in history)
     total_total_lat = sum(e.get("total_latency", 0.0) for e in history)
     total_words = sum(e.get("word_count", 0) for e in history)
     total_chars = sum(e.get("char_count", 0) for e in history)

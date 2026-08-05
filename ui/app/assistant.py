@@ -78,9 +78,10 @@ class VoiceAssistant:
 
     def show_settings(self):
         if self.dashboard is None:
-            self.dashboard = DashboardWindow(self.config, self.on_settings_saved)
+            self.dashboard = DashboardWindow(self.config, self.on_settings_saved, core=self.core)
             # Connect restart signal
             self.dashboard.restart_requested.connect(self.restart_app)
+
         self.dashboard.show()
         self.dashboard.raise_()
         self.dashboard.activateWindow()
@@ -98,10 +99,7 @@ class VoiceAssistant:
         icon_path = get_resource_path(os.path.join("assets", "p.png"))
         if os.path.exists(icon_path):
             self.tray.setIcon(QIcon(icon_path))
-            
-        if self.config.get("api_key"):
-            import threading
-            threading.Thread(target=self.core._get_groq_client, daemon=True).start()
+
 
 
     def on_processing_done(self, text):

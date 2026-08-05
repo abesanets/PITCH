@@ -83,19 +83,19 @@ def build_history_tab(d) -> QWidget:
     d.detail_meta.setObjectName("DetailMeta")
     detail_lay.addWidget(d.detail_meta)
 
-    d.lbl_raw = QLabel("WHISPER")
-    d.lbl_raw.setObjectName("DetailLbl")
-    d.txt_raw = QPlainTextEdit()
-    d.txt_raw.setReadOnly(True)
-    detail_lay.addWidget(d.lbl_raw)
-    detail_lay.addWidget(d.txt_raw)
-
-    d.lbl_clean = QLabel("LLM")
+    d.lbl_clean = QLabel("ТЕКСТ ДИКТОВКИ")
     d.lbl_clean.setObjectName("DetailLbl")
     d.txt_clean = QPlainTextEdit()
     d.txt_clean.setReadOnly(True)
     detail_lay.addWidget(d.lbl_clean)
     detail_lay.addWidget(d.txt_clean)
+
+    d.lbl_raw = QLabel("ИСХОДНЫЙ СЫРОЙ ТЕКСТ (ДО АВТОЗАМЕНЫ)")
+    d.lbl_raw.setObjectName("DetailLbl")
+    d.txt_raw = QPlainTextEdit()
+    d.txt_raw.setReadOnly(True)
+    detail_lay.addWidget(d.lbl_raw)
+    detail_lay.addWidget(d.txt_raw)
 
     d.history_stack.addWidget(detail_page)
     lay.addWidget(d.history_stack)
@@ -165,12 +165,22 @@ def open_history_entry(d, idx: int) -> None:
     """Show the detail view for the given history entry index."""
     if idx is not None and idx < len(d.history_entries):
         e = d.history_entries[idx]
-        d.txt_raw.setPlainText(e.get("raw_text", ""))
-        d.txt_clean.setPlainText(e.get("cleaned_text", ""))
+        raw_text = e.get("raw_text", "").strip()
+        cleaned_text = e.get("cleaned_text", "").strip()
+
+        d.txt_clean.setPlainText(cleaned_text or raw_text)
+        
+        has_diff = bool(raw_text and cleaned_text and raw_text != cleaned_text)
+        d.lbl_raw.setVisible(has_diff)
+        d.txt_raw.setVisible(has_diff)
+        if has_diff:
+            d.txt_raw.setPlainText(raw_text)
+
         d.detail_meta.setText(
             f"{e.get('timestamp', '')}  ·  {e.get('total_latency', 0):.1f}с  ·  {e.get('model', '')}"
         )
         d.history_stack.setCurrentIndex(1)
+
 
 
 def clear_all_history(d) -> None:

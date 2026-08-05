@@ -25,14 +25,10 @@ def load_config():
             with open(CONFIG_FILE, "r", encoding="utf-8") as f:
                 config = json.load(f)
                 config.pop("hotkey_command", None)
+                for legacy_key in ("api_key", "groq_base_url", "use_raw_whisper", "whisper_model", "text_model", "formatting_style", "custom_formatting_style", "hotkey"):
+                    config.pop(legacy_key, None)
                 if config.get("visualizer_style") in ("pulse", "dots", "ribbon"):
                     config["visualizer_style"] = "wave"
-                
-                # Migrate old single-hotkey config
-                if "hotkey" in config and "hotkey_1" not in config:
-                    config["hotkey_1"] = config["hotkey"]
-                if "formatting_style" in config and "mode_1" not in config:
-                    config["mode_1"] = config["formatting_style"]
 
                 for k, v in defaults.items():
                     if k not in config:

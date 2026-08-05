@@ -80,14 +80,16 @@ class DashboardWindow(QWidget):
 
     restart_requested = pyqtSignal()
 
-    def __init__(self, config, save_callback):
+    def __init__(self, config, save_callback, core=None):
         super().__init__()
         self.setObjectName("DashboardWindow")
         self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
         self.config = config
         self.save_callback = save_callback
+        self.core = core
         self.theme_name = self.config.get("theme", "dark")
         self.history_entries = []
+
         
         self._normal_pos = None
         self._is_animating_show = False
@@ -306,13 +308,13 @@ class DashboardWindow(QWidget):
 
         for widget_name in (
             "startup_toggle", "hotkey_2_enabled_cb",
-            "raw_whisper_toggle", "hallucination_filter_toggle",
+            "hallucination_filter_toggle",
         ):
             w = getattr(self, widget_name, None)
             if w:
                 w.set_theme(theme)
 
-        for seg_name in ("min_duration_seg", "whisper_model_seg", "shape_seg", "size_seg", "bg_seg", "sens_seg"):
+        for seg_name in ("min_duration_seg", "shape_seg", "size_seg", "bg_seg", "sens_seg"):
             w = getattr(self, seg_name, None)
             if w:
                 w.set_theme(theme)
@@ -325,8 +327,6 @@ class DashboardWindow(QWidget):
         for btn in self.nav_buttons:
             btn.style().unpolish(btn)
             btn.style().polish(btn)
-
-        self._update_style_ui(self.config.get("formatting_style", "default"))
 
 
     def switch_tab(self, index):

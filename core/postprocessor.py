@@ -8,8 +8,6 @@ class TermPostprocessor:
         self.match_cutoff = match_cutoff
         self.corrections_path = corrections_path
         self.corrections = {}
-        self.reload()
-
     def reload(self):
         if os.path.exists(self.corrections_path):
             try:
@@ -20,6 +18,27 @@ class TermPostprocessor:
                 self.corrections = {}
         else:
             self.corrections = {}
+
+    def save(self):
+
+        try:
+            with open(self.corrections_path, "w", encoding="utf-8") as f:
+                json.dump(self.corrections, f, indent=4, ensure_ascii=False)
+        except Exception as e:
+            print(f"[Postprocessor] Error saving corrections.json: {e}")
+
+    def add_correction(self, word: str, replacement: str):
+        word = word.strip().lower()
+        replacement = replacement.strip()
+        if word and replacement:
+            self.corrections[word] = replacement
+            self.save()
+
+    def remove_correction(self, word: str):
+        word = word.strip().lower()
+        if word in self.corrections:
+            del self.corrections[word]
+            self.save()
 
     def process_text(self, text: str) -> str:
         if not text or not self.corrections:

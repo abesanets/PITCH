@@ -26,26 +26,27 @@ def build_overview_tab(d) -> QWidget:
     hdr.addStretch()
     lay.addLayout(hdr)
 
-    stats_grid = QGridLayout()
-    stats_grid.setSpacing(8)
-    c1, d.val_total   = _stat_card("ДИКТОВОК")
-    c2, d.val_words   = _stat_card("СЛОВ")
-    c3, d.val_chars   = _stat_card("СИМВОЛОВ")
-    c4, d.val_lat     = _stat_card("ЗАДЕРЖКА")
-    c5, d.val_whisper = _stat_card("WHISPER")
-    c6, d.val_llm     = _stat_card("LLM")
-    
+    row1_lay = QHBoxLayout()
+    row1_lay.setSpacing(8)
+    c1, d.val_total = _stat_card("ДИКТОВОК")
+    c2, d.val_words = _stat_card("СЛОВ")
+    c3, d.val_chars = _stat_card("СИМВОЛОВ")
+    row1_lay.addWidget(c1, 1)
+    row1_lay.addWidget(c2, 1)
+    row1_lay.addWidget(c3, 1)
+    lay.addLayout(row1_lay)
+
+    row2_lay = QHBoxLayout()
+    row2_lay.setSpacing(8)
+    c4, d.val_lat = _stat_card("СРЕДНЯЯ ЗАДЕРЖКА")
+    c5, d.val_rtf = _stat_card("СКОРОСТЬ STT")
     d.val_lat.setText("0.0 с")
-    d.val_whisper.setText("0.0 с")
-    d.val_llm.setText("0.0 с")
-    
-    stats_grid.addWidget(c1, 0, 0)
-    stats_grid.addWidget(c2, 0, 1)
-    stats_grid.addWidget(c3, 0, 2)
-    stats_grid.addWidget(c4, 1, 0)
-    stats_grid.addWidget(c5, 1, 1)
-    stats_grid.addWidget(c6, 1, 2)
-    lay.addLayout(stats_grid)
+    d.val_rtf.setText("0.05x RTF")
+    row2_lay.addWidget(c4, 1)
+    row2_lay.addWidget(c5, 1)
+    lay.addLayout(row2_lay)
+
+
 
     hotkey_card = QFrame()
     hotkey_card.setObjectName("Card")
@@ -124,9 +125,9 @@ def update_statistics(d) -> None:
     d.val_words.setText(str(stats["total_words"]))
     d.val_chars.setText(str(stats["total_chars"]))
     d.val_lat.setText(f"{stats['avg_total_latency']:.1f} с")
-    d.val_whisper.setText(f"{stats['avg_whisper_latency']:.1f} с")
-    d.val_llm.setText(f"{stats['avg_llm_latency']:.1f} с")
+    d.val_rtf.setText("0.05x RTF")
     _update_hotkey_badge(d)
+
 
     entries = history_manager.load_history()[:5]
     for i, (item_frame, snippet_lbl, ts_lbl, right_lbl) in enumerate(d.recent_items):
