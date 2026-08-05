@@ -11,7 +11,7 @@ from ..visualizer.widgets import OverlayWindow
 from .dashboard import DashboardWindow
 from core.engine import PitchCore
 from core.clipboard import ClipboardManager
-from core.startup import update_startup_registry
+from core.startup import update_startup_registry, sync_startup_config
 from ..styles import get_resource_path
 
 class VoiceAssistant:
@@ -21,12 +21,10 @@ class VoiceAssistant:
         self.core = core
         self.clipboard = clipboard
         
-        self.config = load_config()
+        self.config = sync_startup_config(load_config())
         self.overlay = OverlayWindow()
         self.overlay.set_theme(self.config.get("theme", "dark"))
         self.overlay.apply_config(self.config)
-        
-        update_startup_registry(self.config.get("run_on_startup", False))
         
         self.dashboard = None
         

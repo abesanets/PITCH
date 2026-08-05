@@ -16,7 +16,11 @@ a = Analysis(
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
-    excludes=[],
+    excludes=[
+        'tensorflow', 'matplotlib', 'scipy', 'pandas', 'PIL',
+        'tkinter', 'IPython', 'notebook', 'anyio', 'pygments',
+        'cv2', 'pytest', 'unittest', 'pydoc'
+    ],
     noarchive=False,
     optimize=0,
 )

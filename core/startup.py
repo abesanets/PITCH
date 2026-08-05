@@ -1,6 +1,29 @@
 import sys
 import os
 
+
+def is_startup_enabled(app_name: str = "PITCHVoiceAssistant") -> bool:
+    """Check if the application is currently registered in Windows Startup registry."""
+    if sys.platform != "win32":
+        return False
+    import winreg
+    key_path = r"Software\Microsoft\Windows\CurrentVersion\Run"
+    try:
+        key = winreg.OpenKey(winreg.HKEY_CURRENT_USER, key_path, 0, winreg.KEY_READ)
+        _, _ = winreg.QueryValueEx(key, app_name)
+        winreg.CloseKey(key)
+        return True
+    except Exception:
+        return False
+
+
+def sync_startup_config(config: dict) -> dict:
+    """Synchronize the config's run_on_startup state with Windows Registry."""
+    if sys.platform == "win32":
+        config["run_on_startup"] = is_startup_enabled()
+    return config
+
+
 def update_startup_registry(enabled: bool, app_name: str = "PITCHVoiceAssistant") -> None:
     """
     Registers or deletes the application from the Windows startup registry.
@@ -8,22 +31,19 @@ def update_startup_registry(enabled: bool, app_name: str = "PITCHVoiceAssistant"
     """
     if sys.platform != "win32":
         return
-        
+
     import winreg
     key_path = r"Software\Microsoft\Windows\CurrentVersion\Run"
-    
+
     # Determine executable path
     if getattr(sys, 'frozen', False):
-        # Compiled exe mode
         exe_path = f'"{sys.executable}"'
     else:
-        # Script development mode
-        # Since this module is inside `core`, sys.argv[0] is still main.py when executed
         script_path = os.path.abspath(sys.argv[0])
         exe_path = f'"{sys.executable}" "{script_path}"'
-        
+
     try:
-        key = winreg.OpenKey(winreg.HKEY_CURRENT_USER, key_path, 0, winreg.KEY_SET_VALUE)
+        key = winreg.OpenKey(winreg.HKEY_CURRENT_USER, key_path, 0, winreg.KEY_ALL_ACCESS)
         if enabled:
             winreg.SetValueEx(key, app_name, 0, winreg.REG_SZ, exe_path)
             print(f"Registry: registered {app_name} at {exe_path} for startup")
