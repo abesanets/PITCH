@@ -2,6 +2,13 @@
 
 PITCH is a local desktop voice dictation assistant for Windows. It captures audio via global low-level keyboard hotkeys, performs speech-to-text transcription in memory using GigaAM v3 e2e RNNT, and pastes transcribed text directly into active applications via Win32 API.
 
+## Architecture & Features
+
+- **Local End-to-End STT**: Uses Sber `GigaAM v3` ONNX engine with `Silero VAD` optimized for Russian speech recognition without cloud API keys or external network dependencies.
+- **In-Memory Audio Pipeline**: Recorded audio buffers are passed directly via RAM (`np.ndarray`) to the recognition engine without temporary file disk I/O.
+- **Dynamic Speed Tracking**: Real-Time Factor (RTF) is calculated dynamically per dictation and displayed on the dashboard.
+- **Native Packaging**: Automated PyInstaller `onedir` build and Inno Setup installer compilation (`build.ps1`).
+
 ## Requirements
 
 - Windows 10 or 11
