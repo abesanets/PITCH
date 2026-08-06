@@ -16,15 +16,11 @@ def _draw_pixel_pill(painter, ox, oy, ow, oh, fill_color, stroke_color):
     
     h1 = 3.0
     h2 = 6.0
-    
     x_in1 = r * 0.45
     x_in2 = r * 0.18
     
-    # Top edge
     path.moveTo(ox + x_in1, oy)
     path.lineTo(ox + ow - x_in1, oy)
-    
-    # Right cap steps
     path.lineTo(ox + ow - x_in1, oy + h1)
     path.lineTo(ox + ow - x_in2, oy + h1)
     path.lineTo(ox + ow - x_in2, oy + h2)
@@ -34,11 +30,7 @@ def _draw_pixel_pill(painter, ox, oy, ow, oh, fill_color, stroke_color):
     path.lineTo(ox + ow - x_in2, oy + oh - h1)
     path.lineTo(ox + ow - x_in1, oy + oh - h1)
     path.lineTo(ox + ow - x_in1, oy + oh)
-    
-    # Bottom edge
     path.lineTo(ox + x_in1, oy + oh)
-    
-    # Left cap steps
     path.lineTo(ox + x_in1, oy + oh - h1)
     path.lineTo(ox + x_in2, oy + oh - h1)
     path.lineTo(ox + x_in2, oy + oh - h2)
@@ -48,7 +40,6 @@ def _draw_pixel_pill(painter, ox, oy, ow, oh, fill_color, stroke_color):
     path.lineTo(ox + x_in2, oy + h1)
     path.lineTo(ox + x_in1, oy + h1)
     path.lineTo(ox + x_in1, oy)
-    
     path.closeSubpath()
     
     painter.fillPath(path, QBrush(fill_color))
@@ -100,6 +91,7 @@ class PreviewWidget(QWidget):
     def paintEvent(self, event):
         p = QPainter(self)
         p.setRenderHint(QPainter.RenderHint.Antialiasing, False)
+        
         ow, oh = VISUALIZER_SIZES.get(self._size_key, (80, 26))
         ox = (self.width() - ow) / 2
         oy = (self.height() - oh) / 2
@@ -272,10 +264,18 @@ class OverlayWindow(QWidget):
         draw_matrix_visualizer(painter, 0, 0, w, h, preset, self.theme, vol, self.phase)
 
     def _paint_matrix_processing(self, painter, w, h, preset):
-        """Matrix Processing Animation: Rotating Pixel Snake travelling cleanly on exact Matrix cells (no background grid)"""
-        cols, rows = 19, 7
-        cell_size = max(2.0, (h - 6.0) / rows * 0.75)
-        gap = max(1.0, cell_size * 0.4)
+        """Matrix Processing Animation: Rotating Pixel Snake travelling cleanly on exact scale-adaptive Matrix cells"""
+        base_dot_size = 2.0
+        base_gap = 1.0
+        pitch = base_dot_size + base_gap
+
+        cols = max(11, int((w - 10.0) / pitch))
+        rows = max(5, int((h - 4.0) / pitch))
+        if cols % 2 == 0: cols -= 1
+        if rows % 2 == 0: rows -= 1
+
+        cell_size = base_dot_size
+        gap = base_gap
 
         grid_w = cols * cell_size + (cols - 1) * gap
         grid_h = rows * cell_size + (rows - 1) * gap
@@ -294,7 +294,7 @@ class OverlayWindow(QWidget):
         painter.setPen(Qt.PenStyle.NoPen)
 
         for r in range(rows):
-            if r == 0 or r == 6:
+            if r == 0 or r == rows - 1:
                 continue
 
             for c in range(cols):

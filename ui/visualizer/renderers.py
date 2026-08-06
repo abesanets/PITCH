@@ -36,11 +36,20 @@ def draw_wave_visualizer(painter, ox: float, oy: float, ow: float, oh: float, pr
 
 
 def draw_matrix_visualizer(painter, ox: float, oy: float, ow: float, oh: float, preset: dict, theme: str, volume: float, phase: float):
-    """Draw discrete diamond pixel field matrix visualizer animation."""
-    cols, rows = 19, 7
-    # Dynamically scale cell size and gap with container height and width
-    cell_size = max(2.0, (oh - 6.0) / rows * 0.75)
-    gap = max(1.0, cell_size * 0.4)
+    """Draw discrete diamond pixel field matrix visualizer animation with scale-adaptive density."""
+    base_dot_size = 2.0
+    base_gap = 1.0
+    pitch = base_dot_size + base_gap
+
+    # Calculate count of columns and rows that fit inside container dimensions
+    cols = max(11, int((ow - 10.0) / pitch))
+    rows = max(5, int((oh - 4.0) / pitch))
+    # Ensure odd dimensions for clear center alignment
+    if cols % 2 == 0: cols -= 1
+    if rows % 2 == 0: rows -= 1
+
+    cell_size = base_dot_size
+    gap = base_gap
 
     grid_w = cols * cell_size + (cols - 1) * gap
     grid_h = rows * cell_size + (rows - 1) * gap
@@ -58,7 +67,7 @@ def draw_matrix_visualizer(painter, ox: float, oy: float, ow: float, oh: float, 
     painter.setPen(Qt.PenStyle.NoPen)
 
     for r in range(rows):
-        if r == 0 or r == 6:
+        if r == 0 or r == rows - 1:
             continue
 
         for c in range(cols):

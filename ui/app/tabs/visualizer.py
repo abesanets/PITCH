@@ -69,8 +69,8 @@ def build_visualizer_tab(d) -> QWidget:
     row1.addWidget(_ctrl_cell("РАЗМЕР", d.size_seg))
     cl.addLayout(row1)
 
-    d.sens_values = [0.7, 1.0, 1.2, 1.5, 2.0]
-    d.sens_seg = SegmentedControl(["0.7", "1.0", "1.2", "1.5", "2.0"])
+    d.sens_values = [0.7, 1.0, 1.2]
+    d.sens_seg = SegmentedControl(["0.7", "1.0", "1.2"])
     saved_sens = d.config.get("visualizer_sensitivity", 1.0)
     try:
         closest_idx = min(range(len(d.sens_values)), key=lambda i: abs(d.sens_values[i] - saved_sens))
