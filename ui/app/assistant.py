@@ -35,6 +35,7 @@ class VoiceAssistant:
     def setup_signals(self):
         self.core.volume_changed.connect(self.overlay.set_volume)
         self.core.state_changed.connect(self.overlay.set_state)
+        self.core.processing_started.connect(self.overlay.start_processing)
         self.core.processing_done.connect(self.on_processing_done)
 
     def setup_tray(self):
@@ -105,14 +106,19 @@ class VoiceAssistant:
 
 
     def on_processing_done(self, text):
-        if text and not text.startswith("Error:"):
-            # Backup to clipboard
-            clipboard = self.app.clipboard()
-            if clipboard:
-                clipboard.setText(text)
-            self.clipboard.paste()
-        elif text.startswith("Error:"):
-            print(text)
+        def _do_paste():
+            if text and not text.startswith("Error:"):
+                clipboard = self.app.clipboard()
+                if clipboard:
+                    clipboard.setText(text)
+                self.clipboard.paste()
+            elif text.startswith("Error:"):
+                print(text)
+
+        if hasattr(self.overlay, "finish_processing"):
+            self.overlay.finish_processing(_do_paste)
+        else:
+            _do_paste()
 
     def quit_app(self):
         print("[Выход] Завершение работы PITCH...")

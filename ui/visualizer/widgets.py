@@ -6,7 +6,7 @@ from PyQt6.QtGui import QPainter, QColor, QPen, QBrush, QCursor, QPainterPath
 
 from ..styles import _lerp_color
 from ..styles_data import VISUALIZER_PRESETS, VISUALIZER_SIZES
-from .renderers import draw_wave_visualizer, draw_matrix_visualizer
+from .renderers import draw_wave_visualizer, draw_matrix_visualizer, draw_wave_processing, draw_matrix_processing
 
 
 def _draw_pixel_pill(painter, ox, oy, ow, oh, fill_color, stroke_color):
@@ -148,6 +148,11 @@ class OverlayWindow(QWidget):
         self.scroll_offset = 0.0
         self.sensitivity = 1.0
 
+        # Processing timing & progress tracking
+        self.progress = 0.0
+        self.estimated_processing_time = 0.5
+        self.processing_elapsed = 0.0
+
         self.reposition()
 
         self.timer = QTimer(self)
@@ -186,9 +191,50 @@ class OverlayWindow(QWidget):
 
     def set_theme(self, theme_name): self.theme = theme_name; self.update()
 
+    def start_processing(self, audio_duration: float, avg_rtf: float = 0.15):
+        """Called when recognition starts with total audio duration and estimated RTF."""
+        self.progress = 0.0
+        self.processing_elapsed = 0.0
+        
+        # Apply a subtle scale factor for longer audio (> 30s) to account for extended context latency
+        if audio_duration > 30.0:
+            scale_factor = 1.0 + 0.08 * math.log2(audio_duration / 30.0)
+        else:
+            scale_factor = 1.0
+
+        self.estimated_processing_time = max(0.25, audio_duration * avg_rtf * scale_factor)
+
+    def finish_processing(self, callback=None):
+        """Smoothly complete progress to 100% during paste operation before hiding."""
+        self.state = "completing"
+        self._completion_callback = callback
+
     def update_animation(self):
         if self.state == "processing":
             self.spinner_angle = (self.spinner_angle + 12) % 360
+            self.processing_elapsed += 0.03
+            
+            ratio = self.processing_elapsed / max(0.01, self.estimated_processing_time)
+            if ratio < 0.92:
+                self.progress = ratio * 0.92
+            else:
+                # Easing curve asymptotically approaching 97%
+                over = ratio - 0.92
+                self.progress = 0.92 + (1.0 - math.exp(-over * 3.0)) * 0.06
+                
+            self.progress = min(0.97, max(0.0, self.progress))
+            self.update()
+        elif self.state == "completing":
+            self.spinner_angle = (self.spinner_angle + 16) % 360
+            self.progress += (1.0 - self.progress) * 0.45
+            if self.progress >= 0.99:
+                self.progress = 1.0
+                self.state = "idle"
+                self.hide()
+                if hasattr(self, "_completion_callback") and self._completion_callback:
+                    cb = self._completion_callback
+                    self._completion_callback = None
+                    cb()
             self.update()
         elif self.state == "recording":
             self.volume += (self.target_volume - self.volume) * 0.25
@@ -208,6 +254,7 @@ class OverlayWindow(QWidget):
                 self.volume = 0.0; self.target_volume = 0.0; self.phase = 0.0
             elif state == "processing":
                 self.spinner_angle = 0
+                self.processing_elapsed = 0.0
             self.reposition()
             self.show()
 
@@ -238,87 +285,12 @@ class OverlayWindow(QWidget):
         draw_wave_visualizer(painter, 0, 0, w, h, preset, self.theme, vol, self.phase)
 
     def _paint_wave_processing(self, painter, w, h, preset):
-        """Calm, smooth flowing wave processing animation for Wave visualizer style"""
-        cy = h / 2.0
-        colors = [wc[self.theme] for wc in preset["waves"]]
-        primary = colors[0]
-        
-        path = QPainterPath()
-        first = True
-        head_phase = (self.spinner_angle / 360.0) * math.pi * 2.0
-        
-        for x in range(6, w - 6):
-            t = (x - 6) / max(1, w - 12)
-            env = math.pow(math.sin(math.pi * t), 2.0)
-            y = cy + (h * 0.22) * env * math.sin(x * 0.12 + head_phase)
-            if first: path.moveTo(x, y); first = False
-            else: path.lineTo(x, y)
-
-        pen = QPen(QColor(primary.red(), primary.green(), primary.blue(), 200))
-        pen.setWidthF(1.8)
-        pen.setCapStyle(Qt.PenCapStyle.RoundCap)
-        painter.setPen(pen)
-        painter.drawPath(path)
+        draw_wave_processing(painter, 0, 0, w, h, preset, self.theme, self.spinner_angle, self.progress)
 
     def _paint_matrix(self, painter, w, h, preset, vol):
         draw_matrix_visualizer(painter, 0, 0, w, h, preset, self.theme, vol, self.phase)
 
     def _paint_matrix_processing(self, painter, w, h, preset):
-        """Matrix Processing Animation: Rotating Pixel Snake travelling cleanly on exact scale-adaptive Matrix cells"""
-        base_dot_size = 2.0
-        base_gap = 1.0
-        pitch = base_dot_size + base_gap
-
-        cols = max(11, int((w - 10.0) / pitch))
-        rows = max(5, int((h - 4.0) / pitch))
-        if cols % 2 == 0: cols -= 1
-        if rows % 2 == 0: rows -= 1
-
-        cell_size = base_dot_size
-        gap = base_gap
-
-        grid_w = cols * cell_size + (cols - 1) * gap
-        grid_h = rows * cell_size + (rows - 1) * gap
-
-        start_x = (w - grid_w) / 2.0
-        start_y = (h - grid_h) / 2.0
-
-        mid_c = (cols - 1) / 2.0
-        mid_r = (rows - 1) / 2.0
-
-        colors = [wc[self.theme] for wc in preset["waves"]]
-        primary_color = colors[0]
-
-        head_angle = (self.spinner_angle / 360.0) * math.pi * 2.0
-
-        painter.setPen(Qt.PenStyle.NoPen)
-
-        for r in range(rows):
-            if r == 0 or r == rows - 1:
-                continue
-
-            for c in range(cols):
-                norm_x = abs(c - mid_c) / max(1, mid_c)
-                norm_y = abs(r - mid_r) / max(1, mid_r)
-                diamond_val = norm_x + norm_y
-
-                if diamond_val > 1.15:
-                    continue
-
-                cell_angle = math.atan2((r - mid_r), (c - mid_c) * 0.45)
-                angle_diff = (head_angle - cell_angle) % (math.pi * 2.0)
-                
-                # Snake tail intensity (only active snake pixels light up)
-                snake_glow = math.exp(-angle_diff * 2.2)
-                if snake_glow < 0.15:
-                    continue
-
-                bx = start_x + c * (cell_size + gap)
-                by = start_y + r * (cell_size + gap)
-
-                opacity = int(255 * min(1.0, snake_glow))
-                c_col = QColor(primary_color.red(), primary_color.green(), primary_color.blue(), opacity)
-                painter.setBrush(QBrush(c_col))
-                painter.drawRect(QRectF(bx, by, cell_size, cell_size))
+        draw_matrix_processing(painter, 0, 0, w, h, preset, self.theme, self.spinner_angle, self.progress)
 
 

@@ -18,6 +18,7 @@ class PitchCore(QObject):
     """
     volume_changed = pyqtSignal(float)
     state_changed = pyqtSignal(str)
+    processing_started = pyqtSignal(float, float)  # audio_duration, avg_rtf
     processing_done = pyqtSignal(str)
 
     _request_start_recording = pyqtSignal(str)
@@ -117,6 +118,15 @@ class PitchCore(QObject):
 
         self._is_processing = True
         self.state_changed.emit("processing")
+
+        try:
+            avg_rtf = history_manager.get_cached_avg_rtf()
+            if not avg_rtf or avg_rtf <= 0:
+                avg_rtf = 0.15
+        except Exception:
+            avg_rtf = 0.15
+
+        self.processing_started.emit(duration, avg_rtf)
 
         self._worker = STTWorker(audio_np, duration, self._stt_engine)
         self._worker.result_ready.connect(self._on_worker_result)
