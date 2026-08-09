@@ -206,6 +206,13 @@ class OverlayWindow(QWidget):
 
     def finish_processing(self, callback=None):
         """Smoothly complete progress to 100% during paste operation before hiding."""
+        if self.state != "processing":
+            if callback:
+                callback()
+            self.state = "idle"
+            self.hide()
+            return
+
         self.state = "completing"
         self._completion_callback = callback
 
@@ -246,6 +253,9 @@ class OverlayWindow(QWidget):
     def set_volume(self, volume): self.target_volume = volume
 
     def set_state(self, state):
+        if state == "idle" and self.state == "completing":
+            return
+
         self.state = state
         if state == "idle":
             self.hide()
@@ -276,7 +286,7 @@ class OverlayWindow(QWidget):
             vol = min(1.0, self.volume * self.sensitivity)
             if self.vis_style == "matrix":    self._paint_matrix(painter, w, h, preset, vol)
             else:                             self._paint_wave(painter, w, h, preset, vol)
-        elif self.state == "processing":
+        elif self.state in ("processing", "completing"):
             if self.vis_style == "matrix":    self._paint_matrix_processing(painter, w, h, preset)
             else:                             self._paint_wave_processing(painter, w, h, preset)
         painter.end()

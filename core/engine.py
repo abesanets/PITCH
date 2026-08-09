@@ -203,7 +203,6 @@ class PitchCore(QObject):
             print(f"Error saving history: {e}")
 
         self._is_processing = False
-        self.state_changed.emit("idle")
         self.processing_done.emit(result["text"])
 
     def _on_worker_error(self, error: str) -> None:

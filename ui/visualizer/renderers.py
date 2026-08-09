@@ -101,45 +101,6 @@ def draw_matrix_visualizer(painter, ox: float, oy: float, ow: float, oh: float, 
             painter.drawRect(QRectF(bx, by, cell_size, cell_size))
 
 
-def draw_pixel_digit(painter, digit: str, x: float, y: float, size: float, color: QColor):
-    """Draw 3x5 pixel-art digit/symbol."""
-    patterns = {
-        '0': ["111", "101", "101", "101", "111"],
-        '1': ["010", "110", "010", "010", "111"],
-        '2': ["111", "001", "111", "100", "111"],
-        '3': ["111", "001", "111", "001", "111"],
-        '4': ["101", "101", "111", "001", "001"],
-        '5': ["111", "100", "111", "001", "111"],
-        '6': ["111", "100", "111", "101", "111"],
-        '7': ["111", "001", "010", "010", "010"],
-        '8': ["111", "101", "111", "101", "111"],
-        '9': ["111", "101", "111", "001", "111"],
-        '%': ["101", "001", "010", "100", "101"]
-    }
-    pattern = patterns.get(digit)
-    if not pattern:
-        return
-    painter.setPen(Qt.PenStyle.NoPen)
-    painter.setBrush(QBrush(color))
-    for r, row in enumerate(pattern):
-        for c, char in enumerate(row):
-            if char == '1':
-                painter.drawRect(QRectF(x + c * size, y + r * size, size, size))
-
-
-def draw_pixel_string(painter, text: str, cx: float, cy: float, size: float, color: QColor):
-    """Draw centered pixel string using 3x5 font."""
-    char_w = 3 * size
-    char_gap = 1 * size
-    total_w = len(text) * char_w + max(0, len(text) - 1) * char_gap
-    start_x = cx - total_w / 2.0
-    start_y = cy - (5 * size) / 2.0
-    
-    for i, char in enumerate(text):
-        x = start_x + i * (char_w + char_gap)
-        draw_pixel_digit(painter, char, x, start_y, size, color)
-
-
 def draw_wave_processing(painter, ox: float, oy: float, ow: float, oh: float, preset: dict, theme: str, spinner_angle: float, progress: float = 0.0):
     """Smooth antialiased wave processing where wave transitions from dim resting color to bright active theme color as progress advances."""
     painter.setRenderHint(QPainter.RenderHint.Antialiasing, True)
