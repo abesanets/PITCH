@@ -32,14 +32,18 @@ python main.py
 
 ## Building Executable and Installer
 
-Run the automated build script:
+1. Prepare offline models:
+```bash
+python tools/prepare_models.py
+```
 
+2. Run the automated build script:
 ```powershell
 powershell -ExecutionPolicy Bypass -File build.ps1
 ```
 
-- PyInstaller compiles the application into `dist/PITCH/` (onedir mode for instantaneous startup).
-- If [Inno Setup 6](https://jrsoftware.org/isdl.php) is installed, `installer.iss` automatically builds `dist/PITCH_Setup_v1.51.exe`.
+- PyInstaller compiles the application into `dist/PITCH/` (onedir mode with bundled models).
+- If [Inno Setup 6](https://jrsoftware.org/isdl.php) is installed, `installer.iss` automatically builds `dist/PITCH_Setup_v1.53.exe`.
 
 ## Hotkeys and Controls
 

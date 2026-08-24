@@ -1,6 +1,6 @@
 """Core business logic package for PITCH voice assistant"""
 
-__version__ = "1.53"
+__version__ = "1.54"
 
 from .engine import PitchCore
 from .clipboard import ClipboardManager

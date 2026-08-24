@@ -1,15 +1,28 @@
 import sys
 import os
 
+# Disable progress bars globally to prevent tqdm/tkinter crashes in windowed mode
+os.environ["HF_HUB_DISABLE_PROGRESS_BARS"] = "1"
+os.environ["TQDM_DISABLE"] = "1"
+
 # Ensure working directory is set to application directory
 if getattr(sys, 'frozen', False):
     os.chdir(os.path.dirname(sys.executable))
 else:
     os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
-from PyQt6.QtWidgets import QApplication
+from core.log_redirector import LogRedirector
+
+# Redirect standard output and error immediately at startup
+log_path = os.path.join(os.getcwd(), "pitch.log")
+redirector = LogRedirector(log_path)
+sys.stdout = redirector
+sys.stderr = redirector
+
+import ctypes
+from PyQt6.QtWidgets import QApplication, QMessageBox
 from core.config_manager import load_config
-from core import PitchCore, ClipboardManager, LogRedirector, AudioRecorder
+from core import PitchCore, ClipboardManager, AudioRecorder
 from ui import VoiceAssistant
 
 
@@ -19,27 +32,32 @@ def main():
     app = QApplication(sys.argv)
     app.setQuitOnLastWindowClosed(False)
 
-    config = load_config()
+    try:
+        config = load_config()
+        recorder = AudioRecorder()
+        clipboard = ClipboardManager()
 
-    recorder = AudioRecorder()
-    clipboard = ClipboardManager()
+        core = PitchCore(
+            config=config,
+            recorder=recorder,
+        )
 
-    core = PitchCore(
-        config=config,
-        recorder=recorder,
-    )
-
-    log_path = os.path.join(os.path.dirname(__file__), "pitch.log")
-    redirector = LogRedirector(log_path)
-    sys.stdout = redirector
-    sys.stderr = redirector
-
-    assistant = VoiceAssistant(core=core, clipboard=clipboard)
-    sys.exit(assistant.run())
+        assistant = VoiceAssistant(core=core, clipboard=clipboard)
+        sys.exit(assistant.run())
+    except Exception as e:
+        import traceback
+        err_msg = traceback.format_exc()
+        print(f"[FATAL ERROR on startup]:\n{err_msg}")
+        ctypes.windll.user32.MessageBoxW(
+            0,
+            f"Ошибка при запуске PITCH:\n\n{e}\n\nПодробности записаны в pitch.log.",
+            "PITCH — Ошибка запуска",
+            0x00000010 | 0x00001000  # MB_ICONERROR | MB_SYSTEMMODAL
+        )
+        sys.exit(1)
 
 
 def ensure_single_instance():
-    import ctypes
     MUTEX_NAME = "Global\\PITCHVoiceAssistant_SingleInstance_V3"
     mutex = ctypes.windll.kernel32.CreateMutexW(None, True, MUTEX_NAME)
     last_error = ctypes.windll.kernel32.GetLastError()
@@ -60,6 +78,9 @@ if __name__ == "__main__":
         if issubclass(exc_type, KeyboardInterrupt):
             print("\nПрограмма корректно завершена (Ctrl+C).")
             sys.exit(0)
+        import traceback
+        formatted = "".join(traceback.format_exception(exc_type, exc_value, exc_traceback))
+        print(f"[Unhandled Exception]:\n{formatted}")
         sys.__excepthook__(exc_type, exc_value, exc_traceback)
 
     sys.excepthook = handle_exception

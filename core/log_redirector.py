@@ -13,10 +13,15 @@ class LogRedirector:
         self._original_stdout = sys.stdout
         self._lock = threading.Lock()
 
-    def write(self, message: str) -> None:
+    encoding: str = "utf-8"
+
+    def write(self, message: str) -> int:
         if self._original_stdout is not None:
-            self._original_stdout.write(message)
-        
+            try:
+                self._original_stdout.write(message)
+            except Exception:
+                pass
+
         stripped_message = message.strip()
         if stripped_message:
             log_line = f"{time.strftime('%Y-%m-%d %H:%M:%S')} - {stripped_message}"
@@ -26,7 +31,20 @@ class LogRedirector:
                         f.write(log_line + "\n")
                 except Exception:
                     pass
+        return len(message)
 
     def flush(self) -> None:
         if self._original_stdout is not None:
-            self._original_stdout.flush()
+            try:
+                self._original_stdout.flush()
+            except Exception:
+                pass
+
+    def isatty(self) -> bool:
+        return False
+
+    def readable(self) -> bool:
+        return False
+
+    def writable(self) -> bool:
+        return True

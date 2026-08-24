@@ -1,9 +1,14 @@
 # -*- mode: python ; coding: utf-8 -*-
 from PyInstaller.utils.hooks import collect_all, copy_metadata
 
+import os
+
 onnx_asr_datas, onnx_asr_binaries, onnx_asr_hiddenimports = collect_all('onnx_asr')
 
 datas = [('assets', 'assets')] + copy_metadata('onnx-asr') + onnx_asr_datas
+if os.path.exists('models'):
+    datas += [('models', 'models')]
+
 binaries = onnx_asr_binaries
 hiddenimports = ['onnx_asr'] + onnx_asr_hiddenimports
 
